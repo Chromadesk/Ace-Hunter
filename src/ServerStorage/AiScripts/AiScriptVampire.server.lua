@@ -28,7 +28,7 @@ end
 
 local stats = {}
 stats.FollowDistance = 50
-stats.StalkDistance = 10
+stats.StalkDistance = 20
 stats.State = "idle"
 
 stats.EnterIdleState = function()
@@ -43,7 +43,7 @@ end
 
 stats.EnterChaseState = function(target)
     stats.State = "chase"
-    while wait(0.1) and stats.State == "chase" and target.Humanoid.Health > 0 do
+    while wait(0.1) and target.Humanoid.Health > 0 do
         humanoid:MoveTo(target.HumanoidRootPart.Position)
 
         local _, closestDistance = getClosestVisibleCharacter()
@@ -51,21 +51,33 @@ stats.EnterChaseState = function(target)
             stats.EnterStalkState(target)
         end
     end
+    stats.State = "idle"
 end
 
 stats.EnterStalkState = function(target)
-    local HRP = target.HumanoidRootPart
     stats.State = "stalk"
-    while wait(0.1) and stats.State == "stalk" and target.Humanoid.Health > 0 do
-        local _, closestDistance = getClosestVisibleCharacter()
+    local HRP = target.HumanoidRootPart
+    local followPart = Instance.new("Part")
+    followPart.Anchored = true
+    followPart.CanCollide = false
+    followPart.Transparency = 0.5
+    followPart.Parent = target
 
-        if closestDistance <= stats.StalkDistance then
-            humanoid:MoveTo(Vector3.new(stats.StalkDistance, 0, stats.StalkDistance / 2) + HRP.Position)
-            offset = offset + 1
-        else
+    local currentAngle = 0
+
+    while wait(0.1) do
+        local _, closestDistance = getClosestVisibleCharacter()
+        local offset = stats.StalkDistance
+        if closestDistance > stats.StalkDistance then
+            followPart:Destroy()
             stats.EnterChaseState(target)
         end
+
+        followPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(currentAngle),0)*CFrame.new(0, 0, stats.StalkDistance - 1)
+        currentAngle = currentAngle + humanoid.WalkSpeed / 3
+        humanoid:MoveTo(followPart.Position)
     end
+    stats.State = "idle"
 end
 
 humanoid.Died:Connect(function()
