@@ -16,14 +16,16 @@ end
 local function getClosestVisibleCharacter()
 	local closestDistance = math.huge
 	local closestCharacter = nil
+    local closestAngle = nil
 	for _, player in pairs(game.Players:GetPlayers()) do
 		local distance = getTargetDistance(player.Character)
 		if distance and distance < closestDistance then
 			closestDistance = distance
 			closestCharacter = player.Character
+            closestAngle = (player.Character.HumanoidRootPart.CFrame:inverse() * vampire.HumanoidRootPart.CFrame).Z
 		end
 	end
-	return closestCharacter, closestDistance
+	return closestCharacter, closestDistance, closestAngle
 end
 
 local stats = {}
@@ -42,7 +44,6 @@ stats.EnterIdleState = function()
 end
 
 local function orientNPC(target)
-    isOrienting = true
 	local HRP = vampire.HumanoidRootPart
 	local targetHRP = target.HumanoidRootPart
     HRP.CFrame = CFrame.lookAt(HRP.CFrame.Position, Vector3.new(targetHRP.Position.X, HRP.CFrame.Position.Y, targetHRP.Position.Z))
@@ -76,8 +77,9 @@ stats.EnterStalkState = function(target)
     local currentAngle = 0
 
     while stats.State == "stalk" and wait(0.001) do
-        local _, closestDistance = getClosestVisibleCharacter()
-        local offset = stats.StalkDistance
+        local _, closestDistance, closestAngle = getClosestVisibleCharacter()
+        if closestAngle > 10 then followPart.BrickColor = BrickColor.new("Really red") else followPart.BrickColor = BrickColor.new("White") end
+        print(closestAngle)
         if closestDistance > stats.StalkDistance then
             followPart:Destroy()
             stats.EnterChaseState(target)
