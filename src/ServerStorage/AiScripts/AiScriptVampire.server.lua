@@ -7,7 +7,7 @@ local function getTargetDistance(targetCharacter)
 	local toPlayer = targetCharacter.Head.Position - vampire.Head.Position
 	local toPlayerRay = Ray.new(vampire.Head.Position, toPlayer)
 	local part = game.Workspace:FindPartOnRay(toPlayerRay, vampire, false, false)
-	if part and part:IsDescendantOf(targetCharacter) then
+	if part and part:IsDescendantOf(targetCharacter) or part:IsDescendantOf(vampire) then
 		return toPlayer.magnitude
 	end
 	return nil
@@ -31,6 +31,8 @@ end
 local stats = {}
 stats.FollowDistance = 50
 stats.StalkDistance = 20
+stats.ChaseSpeed = 25
+stats.LungeSpeed = 50
 stats.State = "idle"
 
 stats.EnterIdleState = function()
@@ -51,11 +53,13 @@ end
 
 stats.EnterChaseState = function(target)
     stats.State = "chase"
+    humanoid.WalkSpeed = stats.ChaseSpeed
     while stats.State == "chase" and wait(0.001) and target.Humanoid.Health > 0 do
         orientNPC(target)
         humanoid:MoveTo(target.HumanoidRootPart.Position)
 
-        local _, closestDistance = getClosestVisibleCharacter()
+        local closestCharacter, closestDistance = getClosestVisibleCharacter()
+        if not closestCharacter then break end
         if closestDistance <= stats.StalkDistance then
             stats.EnterStalkState(target)
         end
@@ -65,32 +69,49 @@ end
 
 stats.EnterStalkState = function(target)
     stats.State = "stalk"
+    local maxDistance = stats.StalkDistance - math.random(1, 8)
     local HRP = target.HumanoidRootPart
     local followPart = Instance.new("Part")
     followPart.Anchored = true
     followPart.CanCollide = false
     followPart.Transparency = 0.5
     followPart.Name = "FollowPart"
-    followPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(0),0)*CFrame.new(0, 0, stats.StalkDistance - 1)
+    followPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(0),0)*CFrame.new(0, 0, maxDistance)
     followPart.Parent = workspace
 
     local currentAngle = 0
+    local secsToRedirect = math.random(1, 5)
+    local redirectCount = 0
+    local rotationSpeed = humanoid.WalkSpeed * 0.1
 
     while stats.State == "stalk" and wait(0.001) do
-        local _, closestDistance, closestAngle = getClosestVisibleCharacter()
-        if closestAngle > 10 then followPart.BrickColor = BrickColor.new("Really red") else followPart.BrickColor = BrickColor.new("White") end
-        print(closestAngle)
+        local closestCharacter, closestDistance, closestAngle = getClosestVisibleCharacter()
+        if not closestCharacter then break end
+        if closestAngle > 10 then end
         if closestDistance > stats.StalkDistance then
             followPart:Destroy()
             stats.EnterChaseState(target)
         end
         
-        followPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(currentAngle),0)*CFrame.new(0, 0, stats.StalkDistance - 1)
-        currentAngle = currentAngle + humanoid.WalkSpeed * 0.1
+        followPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(currentAngle),0)*CFrame.new(0, 0, maxDistance)
+
+        if redirectCount >= secsToRedirect then
+            rotationSpeed = 0 - rotationSpeed
+            redirectCount = 0
+            secsToRedirect = math.random(1, 5)
+        end
+        currentAngle = currentAngle + rotationSpeed
+
         orientNPC(target)
         humanoid:MoveTo(followPart.Position)
+        redirectCount = redirectCount + 0.05
     end
     stats.State = "idle"
+end
+
+stats.EnterLungeState = function(target)
+    stats.State = "lunge"
+    humanoid.WalkSpeed = stats.LungeSpeed
 end
 
 stats.EnterIdleState()
