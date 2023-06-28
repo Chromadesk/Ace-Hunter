@@ -31,57 +31,76 @@ stats.FollowDistance = 50
 stats.StalkDistance = 20
 stats.State = "idle"
 
+local function manageStateChange()
+    local closestCharacter, closestDistance = getClosestVisibleCharacter()
+    local offset = stats.StalkDistance
+    if closestDistance <= stats.StalkDistance and stats.State ~= "stalk" then
+        stats.EnterStalkState(closestCharacter)
+        return
+    end
+    if closestDistance <= stats.FollowDistance and closestDistance > stats.StalkDistance and stats.State ~= "chase" then
+        stats.EnterChaseState(closestCharacter)
+        return
+    end
+    if stats.State ~= "idle" then
+        stats.EnterIdleState()
+    end
+end
+
 stats.EnterIdleState = function()
     stats.State = "idle"
-    while wait(0.1) and stats.State == "idle" do
-        local closestCharacter, closestDistance = getClosestVisibleCharacter()
-        if closestDistance <= stats.FollowDistance then
-            stats.EnterChaseState(closestCharacter)
-        end
+    while stats.State == "idle" and wait(0.001)  do
+        manageStateChange()
     end
+end
+
+local isOrienting = false
+local function orientNPC(target)
+    isOrienting = true
+	local HRP = vampire.HumanoidRootPart
+	local targetHRP = target.HumanoidRootPart
+	HRP.CFrame = CFrame.lookAt(HRP.CFrame.Position, Vector3.new(targetHRP.Position.X, HRP.CFrame.Position.Y, targetHRP.Position.Z))
+
+    local orientEvent = targetHRP.Changed:Connect(function()
+        if stats.State == "idle" then
+            isOrienting = false
+            orientEvent:Disconnect()
+        end
+        orientNPC(target)
+    end)
 end
 
 stats.EnterChaseState = function(target)
     stats.State = "chase"
-    while wait(0.1) and target.Humanoid.Health > 0 do
+    if not isOrienting then orientNPC(target) end
+    while stats.State == "chase" and wait(0.001) and target.Humanoid.Health > 0 do
+        manageStateChange()
         humanoid:MoveTo(target.HumanoidRootPart.Position)
-
-        local _, closestDistance = getClosestVisibleCharacter()
-        if closestDistance <= stats.StalkDistance then
-            stats.EnterStalkState(target)
-        end
     end
-    stats.State = "idle"
 end
 
 stats.EnterStalkState = function(target)
     stats.State = "stalk"
+    if not isOrienting then orientNPC(target) end
     local HRP = target.HumanoidRootPart
     local followPart = Instance.new("Part")
     followPart.Anchored = true
     followPart.CanCollide = false
     followPart.Transparency = 0.5
+    followPart.Name = "FollowPart"
+    followPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(0),0)*CFrame.new(0, 0, stats.StalkDistance - 1)
     followPart.Parent = target
 
     local currentAngle = 0
 
-    while wait(0.1) do
-        local _, closestDistance = getClosestVisibleCharacter()
-        local offset = stats.StalkDistance
-        if closestDistance > stats.StalkDistance then
-            followPart:Destroy()
-            stats.EnterChaseState(target)
-        end
-
+    while stats.State == "stalk" and wait(0.001) do
+        manageStateChange()
         followPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(currentAngle),0)*CFrame.new(0, 0, stats.StalkDistance - 1)
-        currentAngle = currentAngle + humanoid.WalkSpeed / 3
+        currentAngle = currentAngle + humanoid.WalkSpeed * 0.1
         humanoid:MoveTo(followPart.Position)
     end
-    stats.State = "idle"
-end
 
-humanoid.Died:Connect(function()
-    stats.State = "idle"
-end)
+    followPart:Destroy()
+end
 
 stats.EnterIdleState()
