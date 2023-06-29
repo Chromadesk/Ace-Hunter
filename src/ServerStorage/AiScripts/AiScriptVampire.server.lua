@@ -36,26 +36,25 @@ stats.CHASE_SPEED = 25
 stats.LUNGE_SPEED = 40
 stats.SLASH_DAMAGE = 50
 stats.BITE_DAMAGE = 999
+stats.ATTACK_CHANCE = 5
 stats.State = "idle"
 stats.FollowPart = Instance.new("Part")
     stats.FollowPart.Anchored = true
     stats.FollowPart.CanCollide = false
-    stats.FollowPart.Transparency = 0.5
+    stats.FollowPart.Transparency = 1
     stats.FollowPart.Name = "FollowPart"
 
 local attacking = false
 AttackHitbox.touched:Connect(function(toucher)
     local closestCharacter, _, closestAngle = getClosestVisibleCharacter()
+    if not closestCharacter then return end
     if attacking or not toucher:IsDescendantOf(closestCharacter) then return end
     attacking = true
     
-    if closestAngle > 10 then
+    if closestAngle < 7 and closestAngle > 3 then --i dont know why the angle changes depending on distance
         closestCharacter.Humanoid:TakeDamage(stats.BITE_DAMAGE)
-        print(stats.BITE_DAMAGE)
-        print(closestAngle)
     else
         closestCharacter.Humanoid:TakeDamage(stats.SLASH_DAMAGE)
-        print(stats.SLASH_DAMAGE)
     end
 
     wait(0.1)
@@ -111,20 +110,23 @@ stats.EnterStalkState = function(target)
     while stats.State == "stalk" and wait(0.001) do
         local closestCharacter, closestDistance, closestAngle = getClosestVisibleCharacter()
         if not closestCharacter then break end
-        if closestAngle > 10 then
-            print(closestAngle)
+        if closestAngle > 10 then -- If facing the target's back, auto attack them.
             stats.EnterLungeState(target)
+            return
         end
-        if closestDistance > stats.STALK_DISTANCE then
+        if closestDistance > stats.STALK_DISTANCE then -- If the target goes out of stalking range, chase them.
             stats.EnterChaseState(target)
+            return
         end
-        
+        if math.random(0, 1000) <= stats.ATTACK_CHANCE then stats.EnterLungeState(target) return end --randomly lunge
+        if math.random(0, 1000) <= stats.ATTACK_CHANCE * 2 then stats.EnterFakeLungeState(target) return end --randomly fake lunge
+
         stats.FollowPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(currentAngle),0)*CFrame.new(0, 0, maxDistance)
 
-        if redirectCount >= secsToRedirect then
+        if redirectCount >= secsToRedirect then -- If enough time has passed while stalking, change directions.
             rotationSpeed = 0 - rotationSpeed
             redirectCount = 0
-            secsToRedirect = math.random(1, 5)
+            secsToRedirect = math.random(1, 5) -- set a new time to change directions
         end
         currentAngle = currentAngle + rotationSpeed
 
@@ -143,9 +145,18 @@ stats.EnterLungeState = function(target)
     stats.FollowPart.CFrame = vampire.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (stats.STALK_DISTANCE + 10))
     humanoid:MoveTo(stats.FollowPart.Position)
     AttackHitbox.CanTouch = true
-    wait(1)
+    humanoid.MoveToFinished:Wait()
+    stats.State = "idle"
+end
 
-    wait(2.5)
+stats.EnterFakeLungeState = function(target)
+    stats.State = "fakelunge"
+    humanoid.WalkSpeed = stats.CHASE_SPEED
+
+    orientNPC(target.HumanoidRootPart.Position)
+    stats.FollowPart.CFrame = vampire.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (4))
+    humanoid:MoveTo(stats.FollowPart.Position)
+    humanoid.MoveToFinished:Wait()
     stats.State = "idle"
 end
 
