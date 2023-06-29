@@ -89,6 +89,7 @@ stats.EnterIdleState = function()
     end
 end
 
+--TODO Use tween service for this to make smoother.
 local function orientNPC(position)
 	local HRP = vampire.HumanoidRootPart
     HRP.CFrame = CFrame.new(HRP.CFrame.Position, Vector3.new(position.X, HRP.CFrame.Position.Y, position.Z))
@@ -191,6 +192,7 @@ stats.EnterLungeState = function(target)
 
     AttackHitbox.CanTouch = true
     humanoid.MoveToFinished:Wait()
+    AttackHitbox.CanTouch = false
     AnimChaseAlt:Stop()
     SoundLunge:Stop()
     AnimIdle:Play()
