@@ -2,6 +2,20 @@ local vampire = script.parent
 local humanoid = vampire.Humanoid
 local AttackHitbox = vampire:WaitForChild("AttackHitbox")
 
+local Animations = vampire.Animations
+local AnimStrafeRight = humanoid:LoadAnimation(Animations:WaitForChild("Strafe Right"))
+local AnimStrafeLeft = humanoid:LoadAnimation(Animations:WaitForChild("Strafe Left"))
+local AnimLungeEnd = humanoid:LoadAnimation(Animations:WaitForChild("Lunge End"))
+local AnimLunge = humanoid:LoadAnimation(Animations:WaitForChild("Lunge"))
+local AnimLungeOpen = humanoid:LoadAnimation(Animations:WaitForChild("Lunge Open"))
+local AnimChaseAlt = humanoid:LoadAnimation(Animations:WaitForChild("Chase Alt"))
+local AnimChase = humanoid:LoadAnimation(Animations:WaitForChild("Chase"))
+local AnimIdle = humanoid:LoadAnimation(Animations:WaitForChild("Idle"))
+
+local SoundBreathing = vampire.HumanoidRootPart:WaitForChild("Breathing")
+local SoundLunge = vampire.HumanoidRootPart:WaitForChild("Lunge")
+local SoundTaunt = vampire.HumanoidRootPart:WaitForChild("Taunt")
+
 --https://web.archive.org/web/20171120072253/http://wiki.roblox.com/index.php?title=Top_Down_Action/PiBot
 local function getTargetDistance(targetCharacter)
 	if not targetCharacter or targetCharacter.Humanoid.Health <= 0 then return nil end
@@ -64,6 +78,9 @@ end)
 
 stats.EnterIdleState = function()
     stats.State = "idle"
+    stats.StopAnimations()
+    AnimIdle:Play()
+    if not SoundBreathing.IsPlaying then SoundBreathing:Play() end
     while stats.State == "idle" and wait(0.001)  do
         local closestCharacter, closestDistance = getClosestVisibleCharacter()
         if closestDistance <= stats.FOLLOW_DISTANCE then
@@ -79,6 +96,8 @@ end
 
 stats.EnterChaseState = function(target)
     stats.State = "chase"
+    stats.StopAnimations()
+    AnimChase:Play()
     humanoid.WalkSpeed = stats.CHASE_SPEED
     while stats.State == "chase" and wait(0.001) and target.Humanoid.Health > 0 do
         orientNPC(target.HumanoidRootPart.Position)
@@ -94,8 +113,20 @@ stats.EnterChaseState = function(target)
     stats.State = "idle"
 end
 
+stats.StopAnimations = function()
+    AnimStrafeRight:Stop()
+    AnimStrafeLeft:Stop()
+    AnimLungeEnd:Stop()
+    AnimLunge:Stop()
+    AnimLungeOpen:Stop()
+    AnimChaseAlt:Stop()
+    AnimChase:Stop()
+    AnimIdle:Stop()
+end
+
 stats.EnterStalkState = function(target)
     stats.State = "stalk"
+    stats.StopAnimations()
     humanoid.WalkSpeed = stats.CHASE_SPEED
 
     local maxDistance = stats.STALK_DISTANCE - math.random(1, 8)
@@ -106,10 +137,17 @@ stats.EnterStalkState = function(target)
     local secsToRedirect = math.random(1, 5)
     local redirectCount = 0
     local rotationSpeed = humanoid.WalkSpeed * 0.1
+    local direction = 1
+    AnimStrafeLeft:Play()
 
     while stats.State == "stalk" and wait(0.001) do
         local closestCharacter, closestDistance, closestAngle = getClosestVisibleCharacter()
         if not closestCharacter then break end
+        if direction == 1 then
+            if AnimStrafeLeft.IsPlaying then AnimStrafeRight:Play() AnimStrafeLeft:Stop() end
+        else
+            if AnimStrafeRight.IsPlaying then AnimStrafeLeft:Play() AnimStrafeRight:Stop() end
+        end
         if closestAngle > 10 then -- If facing the target's back, auto attack them.
             stats.EnterLungeState(target)
             return
@@ -127,6 +165,7 @@ stats.EnterStalkState = function(target)
             rotationSpeed = 0 - rotationSpeed
             redirectCount = 0
             secsToRedirect = math.random(1, 5) -- set a new time to change directions
+            direction = 0 - direction
         end
         currentAngle = currentAngle + rotationSpeed
 
@@ -139,24 +178,38 @@ end
 
 stats.EnterLungeState = function(target)
     stats.State = "lunge"
-    humanoid.WalkSpeed = stats.LUNGE_SPEED
+    stats.StopAnimations()
 
     orientNPC(target.HumanoidRootPart.Position)
+    humanoid.WalkSpeed = stats.LUNGE_SPEED
+
     stats.FollowPart.CFrame = vampire.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (stats.STALK_DISTANCE + 10))
     humanoid:MoveTo(stats.FollowPart.Position)
+    AnimChaseAlt:Play()
+    SoundLunge.TimePosition = 0.2
+    SoundLunge:Play()
+
     AttackHitbox.CanTouch = true
     humanoid.MoveToFinished:Wait()
+    AnimChaseAlt:Stop()
+    SoundLunge:Stop()
+    AnimIdle:Play()
+    wait(1.5)
     stats.State = "idle"
 end
 
 stats.EnterFakeLungeState = function(target)
     stats.State = "fakelunge"
     humanoid.WalkSpeed = stats.CHASE_SPEED
+    stats.StopAnimations()
 
     orientNPC(target.HumanoidRootPart.Position)
     stats.FollowPart.CFrame = vampire.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (4))
     humanoid:MoveTo(stats.FollowPart.Position)
+    AnimChaseAlt:Play()
+
     humanoid.MoveToFinished:Wait()
+    AnimChaseAlt:Stop()
     stats.State = "idle"
 end
 
