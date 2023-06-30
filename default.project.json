@@ -10,7 +10,10 @@
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "$path": "src/StarterPlayer"
+        "$path": "src/StarterPlayerScripts"
+      },
+      "StarterCharacterScripts": {
+        "$path": "src/StarterCharacterScripts"
       }
     },
     "ServerStorage": {
