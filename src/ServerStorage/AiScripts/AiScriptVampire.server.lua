@@ -1,4 +1,4 @@
-local vampire = script.parent
+local vampire = script.parent --TODO Rename "vampire" to "NPC" everywhere
 local humanoid = vampire.Humanoid
 local AttackHitbox = vampire:WaitForChild("AttackHitbox")
 
