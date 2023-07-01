@@ -8,14 +8,13 @@ local user = nil
 
 local animations = {}
 animations.setAnimations = function()
-	print("setanims")
 	animations.frontAttack = user.Humanoid:LoadAnimation(tool.Animations["Front Attack"])
 	animations.idle = user.Humanoid:LoadAnimation(tool.Animations["Idle"])
 	animations.move = user.Humanoid:LoadAnimation(tool.Animations["Move"])
 end
 
 local stats = {}
-stats.DAMAGE = 40
+stats.DAMAGE = 60
 stats.originalUserSpeed = 0
 
 stats.doFrontAttack = function()
@@ -45,6 +44,7 @@ UserInputService.InputBegan:Connect(function(input, eventProcessed)
 	end
 end)
 
+--TODO find a way to put this into the player so all animations run on the Animations script.
 user.Humanoid.Running:Connect(function(movementSpeed)
 	if animations.frontAttack.isPlaying then return end
 	if movementSpeed > 0 then
@@ -53,7 +53,7 @@ user.Humanoid.Running:Connect(function(movementSpeed)
 			animations.move:Play()
 		end
 	else
-		if animations.idle.IsPlaying then
+		if not animations.idle.IsPlaying then
 			animations.move:Stop()
 			animations.idle:Play()
 		end

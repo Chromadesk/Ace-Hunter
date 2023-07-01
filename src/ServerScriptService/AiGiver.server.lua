@@ -1,14 +1,24 @@
-local AiScriptStorage = game:GetService("ServerStorage").AiScripts
+local AiResources = game:GetService("ServerStorage").AiResources
 
-for _,v in pairs(workspace.NPCs:GetChildren()) do
-        local i = AiScriptStorage.AiScriptVampire:Clone()
-        i.Parent = v
+local function extractFolder(folder, reciever)
+        for _,v in pairs(folder:GetChildren()) do
+                v.Parent = reciever
+        end
 end
 
--- TODO: Add later
--- workspace.NPCs.ChildAdded:Connect(function()
---     for _,v in pairs(workspace.NPCs:GetChildren()) do
---         local i = AiScripts.AiScriptVampire:Clone()
---         i.Parent = v
---     end
--- end)
+local function processVampire(vampireNPC)
+        local vampireResources = AiResources.Vampire
+        local NPCScript = vampireResources.AiScriptVampire:Clone()
+        local Animations = vampireResources.Animations:Clone()
+        local DeathParticles = vampireResources.DeathParticles:Clone()
+        NPCScript.Parent = vampireNPC
+        Animations.Parent = vampireNPC
+        DeathParticles.Parent = vampireNPC.Hips
+        extractFolder(AiResources.Vampire.Sounds:Clone(), vampireNPC.HumanoidRootPart)
+end
+
+for _,v in pairs(workspace.NPCs:GetChildren()) do
+        processVampire(v)
+end
+
+workspace.NPCs.ChildAdded:Connect(processVampire)

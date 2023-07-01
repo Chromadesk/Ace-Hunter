@@ -27,13 +27,11 @@ end)
 local function doFrontAttack(player, aDamage, aUser)
     damage = aDamage
     user = aUser
-    print(user)
-    print(user.Assets.Status)
     user.Assets.Status.Value = "attacking"
-	wait(0.5)
+	wait(0.4)
 	AttackHitbox.CanTouch = true
 	sounds.slash:Play()
-	wait(0.3)
+	wait(0.4)
 	AttackHitbox.CanTouch = false
     user.Assets.Status.Value = "standby"
 end

@@ -1,28 +1,29 @@
-local vampire = script.parent --TODO Rename "vampire" to "NPC" everywhere
-local humanoid = vampire.Humanoid
-local AttackHitbox = vampire:WaitForChild("AttackHitbox")
+local NPC = script.parent
+local humanoid = NPC.Humanoid
+local AttackHitbox = NPC:WaitForChild("AttackHitbox")
 
-local Animations = vampire.Animations
-local AnimStrafeRight = humanoid:LoadAnimation(Animations:WaitForChild("Strafe Right"))
-local AnimStrafeLeft = humanoid:LoadAnimation(Animations:WaitForChild("Strafe Left"))
-local AnimLungeEnd = humanoid:LoadAnimation(Animations:WaitForChild("Lunge End"))
-local AnimLunge = humanoid:LoadAnimation(Animations:WaitForChild("Lunge"))
-local AnimLungeOpen = humanoid:LoadAnimation(Animations:WaitForChild("Lunge Open"))
-local AnimChaseAlt = humanoid:LoadAnimation(Animations:WaitForChild("Chase Alt"))
-local AnimChase = humanoid:LoadAnimation(Animations:WaitForChild("Chase"))
-local AnimIdle = humanoid:LoadAnimation(Animations:WaitForChild("Idle"))
+local Anims = NPC:WaitForChild("Animations")
+local animations = {
+    strafeRight = humanoid:LoadAnimation(Anims:WaitForChild("Strafe Right")),
+    strafeLeft = humanoid:LoadAnimation(Anims:WaitForChild("Strafe Left")),
+    lunge = humanoid:LoadAnimation(Anims:WaitForChild("Chase Alt")),
+    chase = humanoid:LoadAnimation(Anims:WaitForChild("Chase")),
+    idle = humanoid:LoadAnimation(Anims:WaitForChild("Idle"))
+}
 
-local SoundBreathing = vampire.HumanoidRootPart:WaitForChild("Breathing")
-local SoundLunge = vampire.HumanoidRootPart:WaitForChild("Lunge")
-local SoundTaunt = vampire.HumanoidRootPart:WaitForChild("Taunt")
+local sounds = {
+    breathing = NPC.HumanoidRootPart:WaitForChild("Breathing"),
+    lunge = NPC.HumanoidRootPart:WaitForChild("Lunge"),
+    taunt = NPC.HumanoidRootPart:WaitForChild("Taunt")
+}
 
 --https://web.archive.org/web/20171120072253/http://wiki.roblox.com/index.php?title=Top_Down_Action/PiBot
 local function getTargetDistance(targetCharacter)
 	if not targetCharacter or targetCharacter.Humanoid.Health <= 0 then return nil end
-	local toPlayer = targetCharacter.Head.Position - vampire.Head.Position
-	local toPlayerRay = Ray.new(vampire.Head.Position, toPlayer)
-	local part = game.Workspace:FindPartOnRay(toPlayerRay, vampire, false, false)
-	if part and part:IsDescendantOf(targetCharacter) or part:IsDescendantOf(vampire) then
+	local toPlayer = targetCharacter.Head.Position - NPC.Head.Position
+	local toPlayerRay = Ray.new(NPC.Head.Position, toPlayer)
+	local part = game.Workspace:FindPartOnRay(toPlayerRay, NPC, false, false)
+	if part and part:IsDescendantOf(targetCharacter) or part:IsDescendantOf(NPC) then
 		return toPlayer.magnitude
 	end
 	return nil
@@ -37,7 +38,7 @@ local function getClosestVisibleCharacter()
 		if distance and distance < closestDistance then
 			closestDistance = distance
 			closestCharacter = player.Character
-            closestAngle = (player.Character.HumanoidRootPart.CFrame:inverse() * vampire.HumanoidRootPart.CFrame).Z
+            closestAngle = (player.Character.HumanoidRootPart.CFrame:inverse() * NPC.HumanoidRootPart.CFrame).Z
 		end
 	end
 	return closestCharacter, closestDistance, closestAngle
@@ -50,7 +51,7 @@ stats.CHASE_SPEED = 25
 stats.LUNGE_SPEED = 40
 stats.SLASH_DAMAGE = 50
 stats.BITE_DAMAGE = 999
-stats.ATTACK_CHANCE = 5
+stats.ATTACK_CHANCE = 2 -- Out of 1000
 stats.State = "idle"
 stats.FollowPart = Instance.new("Part")
     stats.FollowPart.Anchored = true
@@ -79,8 +80,8 @@ end)
 stats.EnterIdleState = function()
     stats.State = "idle"
     stats.StopAnimations()
-    AnimIdle:Play()
-    if not SoundBreathing.IsPlaying then SoundBreathing:Play() end
+    animations.idle:Play()
+    if not sounds.breathing.IsPlaying then sounds.breathing:Play() end
     while stats.State == "idle" and wait(0.001)  do
         local closestCharacter, closestDistance = getClosestVisibleCharacter()
         if closestDistance <= stats.FOLLOW_DISTANCE then
@@ -91,16 +92,16 @@ end
 
 --TODO Use tween service for this to make smoother.
 local function orientNPC(position)
-	local HRP = vampire.HumanoidRootPart
+	local HRP = NPC.HumanoidRootPart
     HRP.CFrame = CFrame.new(HRP.CFrame.Position, Vector3.new(position.X, HRP.CFrame.Position.Y, position.Z))
 end
 
 stats.EnterChaseState = function(target)
     stats.State = "chase"
     stats.StopAnimations()
-    AnimChase:Play()
+    animations.chase:Play()
     humanoid.WalkSpeed = stats.CHASE_SPEED
-    while stats.State == "chase" and wait(0.001) and target.Humanoid.Health > 0 do
+    while stats.State == "chase" and wait(0.001) and target.Humanoid.Health > 0 and humanoid.Health > 0 do
         orientNPC(target.HumanoidRootPart.Position)
         stats.FollowPart.CFrame = target.HumanoidRootPart.CFrame
         humanoid:MoveTo(stats.FollowPart.Position)
@@ -115,14 +116,9 @@ stats.EnterChaseState = function(target)
 end
 
 stats.StopAnimations = function()
-    AnimStrafeRight:Stop()
-    AnimStrafeLeft:Stop()
-    AnimLungeEnd:Stop()
-    AnimLunge:Stop()
-    AnimLungeOpen:Stop()
-    AnimChaseAlt:Stop()
-    AnimChase:Stop()
-    AnimIdle:Stop()
+    for _,v in pairs(animations) do
+        v:Stop()
+    end
 end
 
 stats.EnterStalkState = function(target)
@@ -139,15 +135,15 @@ stats.EnterStalkState = function(target)
     local redirectCount = 0
     local rotationSpeed = humanoid.WalkSpeed * 0.1
     local direction = 1
-    AnimStrafeLeft:Play()
+    animations.strafeLeft:Play()
 
-    while stats.State == "stalk" and wait(0.001) do
+    while stats.State == "stalk" and wait(0.001) and target.Humanoid.Health > 0 and humanoid.Health > 0 do
         local closestCharacter, closestDistance, closestAngle = getClosestVisibleCharacter()
         if not closestCharacter then break end
         if direction == 1 then
-            if AnimStrafeLeft.IsPlaying then AnimStrafeRight:Play() AnimStrafeLeft:Stop() end
+            if animations.strafeLeft.IsPlaying then animations.strafeRight:Play() animations.strafeLeft:Stop() end
         else
-            if AnimStrafeRight.IsPlaying then AnimStrafeLeft:Play() AnimStrafeRight:Stop() end
+            if animations.strafeRight.IsPlaying then animations.strafeLeft:Play() animations.strafeRight:Stop() end
         end
         if closestAngle > 10 then -- If facing the target's back, auto attack them.
             stats.EnterLungeState(target)
@@ -184,18 +180,19 @@ stats.EnterLungeState = function(target)
     orientNPC(target.HumanoidRootPart.Position)
     humanoid.WalkSpeed = stats.LUNGE_SPEED
 
-    stats.FollowPart.CFrame = vampire.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (stats.STALK_DISTANCE + 10))
+    stats.FollowPart.CFrame = NPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (stats.STALK_DISTANCE + 50))
     humanoid:MoveTo(stats.FollowPart.Position)
-    AnimChaseAlt:Play()
-    SoundLunge.TimePosition = 0.2
-    SoundLunge:Play()
+    animations.lunge:Play()
+    sounds.lunge.TimePosition = 0.2
+    sounds.lunge:Play()
 
     AttackHitbox.CanTouch = true
-    humanoid.MoveToFinished:Wait()
+    wait(1)
+    humanoid.WalkSpeed = 0
     AttackHitbox.CanTouch = false
-    AnimChaseAlt:Stop()
-    SoundLunge:Stop()
-    AnimIdle:Play()
+    animations.lunge:Stop()
+    sounds.lunge:Stop()
+    animations.idle:Play()
     wait(1.5)
     stats.State = "idle"
 end
@@ -206,13 +203,26 @@ stats.EnterFakeLungeState = function(target)
     stats.StopAnimations()
 
     orientNPC(target.HumanoidRootPart.Position)
-    stats.FollowPart.CFrame = vampire.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (4))
+    stats.FollowPart.CFrame = NPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (4))
     humanoid:MoveTo(stats.FollowPart.Position)
-    AnimChaseAlt:Play()
+    animations.chase:Play()
 
-    humanoid.MoveToFinished:Wait()
-    AnimChaseAlt:Stop()
+    wait(0.2)
+    humanoid.WalkSpeed = 0
+    animations.lunge:Stop()
     stats.State = "idle"
 end
+
+stats.EnterDeadState = function()
+    stats.State = "dead"
+    stats.StopAnimations()
+    AttackHitbox.CanTouch = false
+    NPC.Hips.DeathParticles.Enabled = true
+    sounds.taunt:Play()
+    sounds.taunt.Ended:Wait()
+    NPC:Destroy()
+end
+
+humanoid.Died:Connect(stats.EnterDeadState)
 
 stats.EnterIdleState()
