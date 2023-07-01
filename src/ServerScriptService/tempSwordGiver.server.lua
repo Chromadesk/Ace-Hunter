@@ -1,9 +1,10 @@
 local Players = game:GetService("Players")
 
-local katana = game:GetService("ServerStorage").Weapons.Katana:Clone()
-
 Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Wait()
-    katana.Parent = workspace
-    katana.Parent = player.Character
+    player.CharacterAdded:Connect(function(character)
+        local katana = game:GetService("ServerStorage").Weapons.Katana:Clone()
+        wait(0.1)
+        katana.Parent = workspace
+        katana.Parent = character
+    end)  
 end)

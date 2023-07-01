@@ -8,9 +8,10 @@ local user = nil
 
 local animations = {}
 animations.setAnimations = function()
+	print("setanims")
 	animations.frontAttack = user.Humanoid:LoadAnimation(tool.Animations["Front Attack"])
-	user.Assets.Idle.AnimationId = tool.Animations.Idle.AnimationId
-	user.Assets.Move.AnimationId = tool.Animations.Move.AnimationId
+	animations.idle = user.Humanoid:LoadAnimation(tool.Animations["Idle"])
+	animations.move = user.Humanoid:LoadAnimation(tool.Animations["Move"])
 end
 
 local stats = {}
@@ -19,8 +20,10 @@ stats.originalUserSpeed = 0
 
 stats.doFrontAttack = function()
 	user.Humanoid.WalkSpeed = 3
+	animations.idle:Stop()
+	animations.move:Stop()
 	animations.frontAttack:Play()
-	ActivateRE:FireServer(stats, user)
+	ActivateRE:FireServer(stats.DAMAGE, user)
 	animations.frontAttack.Ended:Wait()
 	user.Humanoid.WalkSpeed = stats.originalUserSpeed
 	pauseInput = false
@@ -39,5 +42,20 @@ UserInputService.InputBegan:Connect(function(input, eventProcessed)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		pauseInput = true
 		stats.doFrontAttack()
+	end
+end)
+
+user.Humanoid.Running:Connect(function(movementSpeed)
+	if animations.frontAttack.isPlaying then return end
+	if movementSpeed > 0 then
+		if not animations.move.IsPlaying then
+			animations.idle:Stop()
+			animations.move:Play()
+		end
+	else
+		if animations.idle.IsPlaying then
+			animations.move:Stop()
+			animations.idle:Play()
+		end
 	end
 end)
