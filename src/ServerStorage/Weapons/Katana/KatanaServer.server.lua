@@ -23,7 +23,8 @@ AttackHitbox.touched:Connect(function(toucher)
 	end
 end)
 
-local function doFrontAttack(player, aDamage, aUser)
+local attacks = {}
+attacks.frontAttack = function(aDamage, aUser)
     damage = aDamage
     user = aUser
     user.Assets.Status.Value = "attacking"
@@ -35,4 +36,20 @@ local function doFrontAttack(player, aDamage, aUser)
     user.Assets.Status.Value = "standby"
 end
 
-ActivateRE.OnServerEvent:Connect(doFrontAttack)
+attacks.backAttack = function(aDamage, aUser)
+    damage = aDamage * 2
+    user = aUser
+    user.Assets.Status.Value = "attacking"
+	wait(0.1)
+	AttackHitbox.CanTouch = true
+	sounds.slash:Play()
+	wait(0.6)
+	AttackHitbox.CanTouch = false
+    user.Assets.Status.Value = "standby"
+end
+
+local function doAttack(player, aDamage, aUser, attackName)
+	attacks[attackName](aDamage, aUser)
+end
+
+ActivateRE.OnServerEvent:Connect(doAttack)

@@ -9,6 +9,7 @@ local user = nil
 local animations = {}
 animations.setAnimations = function()
 	animations.frontAttack = user.Humanoid:LoadAnimation(tool.Animations["Front Attack"])
+	animations.backAttack = user.Humanoid:LoadAnimation(tool.Animations["Back Attack"])
 	animations.idle = user.Humanoid:LoadAnimation(tool.Animations["Idle"])
 	animations.move = user.Humanoid:LoadAnimation(tool.Animations["Move"])
 end
@@ -17,13 +18,14 @@ local stats = {}
 stats.DAMAGE = 60
 stats.originalUserSpeed = 0
 
-stats.doFrontAttack = function()
+stats.doAttack = function(attackName)
 	user.Humanoid.WalkSpeed = 3
 	animations.idle:Stop()
 	animations.move:Stop()
-	animations.frontAttack:Play()
-	ActivateRE:FireServer(stats.DAMAGE, user)
-	animations.frontAttack.Ended:Wait()
+	animations[attackName]:Play()
+	ActivateRE:FireServer(stats.DAMAGE, user, attackName)
+	animations[attackName].Ended:Wait()
+	animations.idle:Play()
 	user.Humanoid.WalkSpeed = stats.originalUserSpeed
 	pauseInput = false
 end
@@ -40,13 +42,19 @@ UserInputService.InputBegan:Connect(function(input, eventProcessed)
 
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		pauseInput = true
-		stats.doFrontAttack()
+		stats.doAttack("frontAttack")
+	end
+
+	if input.UserInputType == Enum.UserInputType.MouseButton2 then
+		pauseInput = true
+		stats.doAttack("backAttack")
 	end
 end)
 
 --TODO find a way to put this into the player so all animations run on the Animations script.
 user.Humanoid.Running:Connect(function(movementSpeed)
 	if animations.frontAttack.isPlaying then return end
+	if animations.backAttack.isPlaying then return end
 	if movementSpeed > 0 then
 		if not animations.move.IsPlaying then
 			animations.idle:Stop()
