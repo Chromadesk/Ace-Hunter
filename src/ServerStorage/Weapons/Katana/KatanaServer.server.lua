@@ -1,6 +1,7 @@
 --CLIENT SCRIPT
 local tool = script.Parent
-local AttackHitbox = tool:WaitForChild("AttackHitbox")
+local StabHitbox = tool:WaitForChild("StabHitbox")
+local SlashHitbox = tool:WaitForChild("SlashHitbox")
 local UserInputService = game:GetService("UserInputService")
 local ActivateRE = tool:WaitForChild("ActivateRE")
 local pauseInput = false
@@ -12,28 +13,31 @@ local sounds = {}
 sounds.slash = tool.Handle.Slash
 sounds.hitsound = tool.Handle.Hitsound
 
-AttackHitbox.touched:Connect(function(toucher)
+local function registerHit(toucher)
 	if not toucher then return end
 	if toucher:IsDescendantOf(user) then return end
 
 	if toucher.Parent and toucher.Parent:FindFirstChild("Humanoid") then
 		toucher.Parent.Humanoid:TakeDamage(damage)
 		sounds.hitsound:Play()
-		AttackHitbox.CanTouch = false
+		SlashHitbox.CanTouch = false
+		StabHitbox.CanTouch = false
 	end
-end)
+end
+
+SlashHitbox.touched:Connect(registerHit)
+StabHitbox.touched:Connect(registerHit)
 
 local attacks = {}
 attacks.frontAttack = function(aDamage, aUser)
     damage = aDamage
     user = aUser
     user.Assets.Status.Value = "attacking"
-	user.Humanoid.WalkSpeed = 3
 	wait(0.3)
-	AttackHitbox.CanTouch = true
+	SlashHitbox.CanTouch = true
 	sounds.slash:Play()
 	wait(0.3)
-	AttackHitbox.CanTouch = false
+	SlashHitbox.CanTouch = false
     user.Assets.Status.Value = "standby"
 end
 
@@ -41,13 +45,12 @@ attacks.backAttack = function(aDamage, aUser)
     damage = aDamage * 2
     user = aUser
     user.Assets.Status.Value = "attacking"
-	user.Humanoid.WalkSpeed = 1
 	user.Assets.DisableRotation.Value = true
 	wait(0.1)
-	AttackHitbox.CanTouch = true
+	StabHitbox.CanTouch = true
 	sounds.slash:Play()
 	wait(0.6)
-	AttackHitbox.CanTouch = false
+	StabHitbox.CanTouch = false
 	user.Assets.DisableRotation.Value = false
     user.Assets.Status.Value = "standby"
 end

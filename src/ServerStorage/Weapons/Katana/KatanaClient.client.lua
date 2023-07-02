@@ -1,6 +1,5 @@
 --CLIENT SCRIPT
 local tool = script.Parent
-local AttackHitbox = tool:WaitForChild("AttackHitbox")
 local UserInputService = game:GetService("UserInputService")
 local ActivateRE = tool:WaitForChild("ActivateRE")
 local pauseInput = false
@@ -22,6 +21,7 @@ stats.doAttack = function(attackName)
 	animations.idle:Stop()
 	animations.move:Stop()
 	animations[attackName]:Play()
+	user.Humanoid.WalkSpeed = 3
 	ActivateRE:FireServer(stats.DAMAGE, user, attackName)
 	animations[attackName].Ended:Wait()
 	animations.idle:Play()
