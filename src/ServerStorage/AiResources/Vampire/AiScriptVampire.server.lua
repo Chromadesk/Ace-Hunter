@@ -38,7 +38,7 @@ local function getClosestVisibleCharacter()
 		if distance and distance < closestDistance then
 			closestDistance = distance
 			closestCharacter = player.Character
-            closestAngle = (player.Character.HumanoidRootPart.CFrame:inverse() * NPC.HumanoidRootPart.CFrame).Z
+            closestAngle = (player.Character.UpperChest.CFrame:inverse() * NPC.HumanoidRootPart.CFrame).Z
 		end
 	end
 	return closestCharacter, closestDistance, closestAngle
@@ -77,6 +77,18 @@ AttackHitbox.touched:Connect(function(toucher)
     AttackHitbox.CanTouch = false
 end)
 
+--TODO Use tween service for this to make smoother.
+local function orientNPC(position)
+	local HRP = NPC.HumanoidRootPart
+    HRP.CFrame = CFrame.new(HRP.CFrame.Position, Vector3.new(position.X, HRP.CFrame.Position.Y, position.Z))
+end
+
+stats.StopAnimations = function()
+    for _,v in pairs(animations) do
+        v:Stop()
+    end
+end
+
 stats.EnterIdleState = function()
     stats.State = "idle"
     stats.StopAnimations()
@@ -88,12 +100,6 @@ stats.EnterIdleState = function()
             stats.EnterChaseState(closestCharacter)
         end
     end
-end
-
---TODO Use tween service for this to make smoother.
-local function orientNPC(position)
-	local HRP = NPC.HumanoidRootPart
-    HRP.CFrame = CFrame.new(HRP.CFrame.Position, Vector3.new(position.X, HRP.CFrame.Position.Y, position.Z))
 end
 
 stats.EnterChaseState = function(target)
@@ -115,12 +121,6 @@ stats.EnterChaseState = function(target)
     stats.State = "idle"
 end
 
-stats.StopAnimations = function()
-    for _,v in pairs(animations) do
-        v:Stop()
-    end
-end
-
 stats.EnterStalkState = function(target)
     stats.State = "stalk"
     stats.StopAnimations()
@@ -138,6 +138,8 @@ stats.EnterStalkState = function(target)
     animations.strafeLeft:Play()
 
     while stats.State == "stalk" and wait(0.001) and target.Humanoid.Health > 0 and humanoid.Health > 0 do
+        local canAttack = true
+
         local closestCharacter, closestDistance, closestAngle = getClosestVisibleCharacter()
         if not closestCharacter then break end
         if direction == 1 then
@@ -145,16 +147,15 @@ stats.EnterStalkState = function(target)
         else
             if animations.strafeRight.IsPlaying then animations.strafeLeft:Play() animations.strafeRight:Stop() end
         end
-        if closestAngle > 10 then -- If facing the target's back, auto attack them.
-            stats.EnterLungeState(target)
-            return
-        end
-        if closestDistance > stats.STALK_DISTANCE then -- If the target goes out of stalking range, chase them.
-            stats.EnterChaseState(target)
-            return
-        end
-        if math.random(0, 1000) <= stats.ATTACK_CHANCE then stats.EnterLungeState(target) return end --randomly lunge
-        if math.random(0, 1000) <= stats.ATTACK_CHANCE * 2 then stats.EnterFakeLungeState(target) return end --randomly fake lunge
+
+        -- If facing the target's back, auto attack them. 
+        if closestAngle > 10 then stats.EnterLungeState(target) return end
+
+        -- If the target goes out of stalking range, chase them.
+        if closestDistance > stats.STALK_DISTANCE then stats.EnterChaseState(target) return end
+
+        if canAttack and math.random(0, 1000) <= stats.ATTACK_CHANCE then stats.EnterLungeState(target) return end --randomly lunge
+        if canAttack and math.random(0, 1000) <= stats.ATTACK_CHANCE * 2 then stats.EnterFakeLungeState(target) return end --randomly fake lunge
 
         stats.FollowPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(currentAngle),0)*CFrame.new(0, 0, maxDistance)
 

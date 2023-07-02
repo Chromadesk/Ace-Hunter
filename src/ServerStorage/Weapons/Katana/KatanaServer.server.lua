@@ -19,9 +19,8 @@ AttackHitbox.touched:Connect(function(toucher)
 	if toucher.Parent and toucher.Parent:FindFirstChild("Humanoid") then
 		toucher.Parent.Humanoid:TakeDamage(damage)
 		sounds.hitsound:Play()
+		AttackHitbox.CanTouch = false
 	end
-
-	AttackHitbox.CanTouch = false
 end)
 
 local function doFrontAttack(player, aDamage, aUser)
