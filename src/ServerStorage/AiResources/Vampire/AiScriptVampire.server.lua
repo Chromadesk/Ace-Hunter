@@ -138,7 +138,7 @@ stats.EnterStalkState = function(target)
     local secsToRedirect = math.random(1, 5)
     local redirectCount = 0
     local rotationSpeed = humanoid.WalkSpeed * 0.1
-    local direction = 1
+    local direction = math.round(math.random(0, 1))
     animations.strafeLeft:Play()
 
     while stats.State == "stalk" and wait(0.001) and target.Humanoid.Health > 0 and humanoid.Health > 0 do

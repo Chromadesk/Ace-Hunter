@@ -28,6 +28,7 @@ attacks.frontAttack = function(aDamage, aUser)
     damage = aDamage
     user = aUser
     user.Assets.Status.Value = "attacking"
+	user.Humanoid.WalkSpeed = 3
 	wait(0.3)
 	AttackHitbox.CanTouch = true
 	sounds.slash:Play()
@@ -40,11 +41,14 @@ attacks.backAttack = function(aDamage, aUser)
     damage = aDamage * 2
     user = aUser
     user.Assets.Status.Value = "attacking"
+	user.Humanoid.WalkSpeed = 1
+	user.Assets.DisableRotation.Value = true
 	wait(0.1)
 	AttackHitbox.CanTouch = true
 	sounds.slash:Play()
 	wait(0.6)
 	AttackHitbox.CanTouch = false
+	user.Assets.DisableRotation.Value = false
     user.Assets.Status.Value = "standby"
 end
 

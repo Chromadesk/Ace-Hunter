@@ -13,7 +13,9 @@ RunService:BindToRenderStep("MouseLock",Enum.RenderPriority.Last.Value+1,functio
     UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
 end)
 
+
 RunService.RenderStepped:Connect(function()
+    if character.Assets.DisableRotation.Value then return end
     local _, y = workspace.CurrentCamera.CFrame.Rotation:ToEulerAnglesYXZ()
     character.HumanoidRootPart.CFrame = CFrame.new(character.HumanoidRootPart.Position) * CFrame.Angles(0,y,0)
 end)

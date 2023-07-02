@@ -19,7 +19,6 @@ stats.DAMAGE = 60
 stats.originalUserSpeed = 0
 
 stats.doAttack = function(attackName)
-	user.Humanoid.WalkSpeed = 3
 	animations.idle:Stop()
 	animations.move:Stop()
 	animations[attackName]:Play()
