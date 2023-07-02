@@ -1,6 +1,7 @@
 local NPC = script.parent
 local humanoid = NPC.Humanoid
 local AttackHitbox = NPC:WaitForChild("AttackHitbox")
+local pauseStateChange = false
 
 local Anims = NPC:WaitForChild("Animations")
 local animations = {
@@ -8,7 +9,8 @@ local animations = {
     strafeLeft = humanoid:LoadAnimation(Anims:WaitForChild("Strafe Left")),
     lunge = humanoid:LoadAnimation(Anims:WaitForChild("Chase Alt")),
     chase = humanoid:LoadAnimation(Anims:WaitForChild("Chase")),
-    idle = humanoid:LoadAnimation(Anims:WaitForChild("Idle"))
+    idle = humanoid:LoadAnimation(Anims:WaitForChild("Idle")),
+    hit = humanoid:LoadAnimation(Anims:WaitForChild("Hit"))
 }
 
 local sounds = {
@@ -16,33 +18,6 @@ local sounds = {
     lunge = NPC.HumanoidRootPart:WaitForChild("Lunge"),
     taunt = NPC.HumanoidRootPart:WaitForChild("Taunt")
 }
-
---https://web.archive.org/web/20171120072253/http://wiki.roblox.com/index.php?title=Top_Down_Action/PiBot
-local function getTargetDistance(targetCharacter)
-	if not targetCharacter or targetCharacter.Humanoid.Health <= 0 then return nil end
-	local toPlayer = targetCharacter.Head.Position - NPC.Head.Position
-	local toPlayerRay = Ray.new(NPC.Head.Position, toPlayer)
-	local part = game.Workspace:FindPartOnRay(toPlayerRay, NPC, false, false)
-	if part and part:IsDescendantOf(targetCharacter) or part:IsDescendantOf(NPC) then
-		return toPlayer.magnitude
-	end
-	return nil
-end
-
-local function getClosestVisibleCharacter()
-	local closestDistance = math.huge
-	local closestCharacter = nil
-    local closestAngle = nil
-	for _, player in pairs(game.Players:GetPlayers()) do
-		local distance = getTargetDistance(player.Character)
-		if distance and distance < closestDistance then
-			closestDistance = distance
-			closestCharacter = player.Character
-            closestAngle = (player.Character.UpperChest.CFrame:inverse() * NPC.HumanoidRootPart.CFrame).Z
-		end
-	end
-	return closestCharacter, closestDistance, closestAngle
-end
 
 local stats = {}
 stats.FOLLOW_DISTANCE = 50
@@ -58,6 +33,33 @@ stats.FollowPart = Instance.new("Part")
     stats.FollowPart.CanCollide = false
     stats.FollowPart.Transparency = 1
     stats.FollowPart.Name = "FollowPart"
+
+--https://web.archive.org/web/20171120072253/http://wiki.roblox.com/index.php?title=Top_Down_Action/PiBot
+local function getTargetDistance(targetCharacter)
+	if not targetCharacter or targetCharacter.Humanoid.Health <= 0 then return nil end
+	local toPlayer = targetCharacter.Head.Position - NPC.Head.Position
+	local toPlayerRay = Ray.new(NPC.Head.Position, toPlayer)
+	local part = game.Workspace:FindPartOnRay(toPlayerRay, NPC, false, false)
+	if part and part:IsDescendantOf(workspace:FindFirstChild(targetCharacter.Name)) or part:IsDescendantOf(NPC) then -- why does this cause a nil error??
+		return toPlayer.magnitude
+	end
+	return nil
+end
+
+local function getClosestVisibleCharacter()
+	local closestDistance = math.huge
+	local closestCharacter = nil
+    local closestAngle = nil
+	for _, player in pairs(game.Players:GetPlayers()) do
+		local distance = getTargetDistance(player.Character)
+		if distance and distance < closestDistance then
+			closestDistance = distance
+			closestCharacter = player.Character
+            closestAngle = (player.Character.ChestUpper.CFrame:inverse() * NPC.HumanoidRootPart.CFrame).Z
+		end
+	end
+	return closestCharacter, closestDistance, closestAngle
+end
 
 local attacking = false
 AttackHitbox.touched:Connect(function(toucher)
@@ -90,6 +92,7 @@ stats.StopAnimations = function()
 end
 
 stats.EnterIdleState = function()
+    if pauseStateChange then return end
     stats.State = "idle"
     stats.StopAnimations()
     animations.idle:Play()
@@ -103,6 +106,7 @@ stats.EnterIdleState = function()
 end
 
 stats.EnterChaseState = function(target)
+    if pauseStateChange then return end
     stats.State = "chase"
     stats.StopAnimations()
     animations.chase:Play()
@@ -118,10 +122,10 @@ stats.EnterChaseState = function(target)
             stats.EnterStalkState(target)
         end
     end
-    stats.State = "idle"
 end
 
 stats.EnterStalkState = function(target)
+    if pauseStateChange then return end
     stats.State = "stalk"
     stats.StopAnimations()
     humanoid.WalkSpeed = stats.CHASE_SPEED
@@ -154,6 +158,9 @@ stats.EnterStalkState = function(target)
         -- If the target goes out of stalking range, chase them.
         if closestDistance > stats.STALK_DISTANCE then stats.EnterChaseState(target) return end
 
+        -- If the target attacks prematurely, begin counterattack.
+        if target.Assets.Status.Value == "attacking" then stats.EnterCounterState(target) return end
+
         if canAttack and math.random(0, 1000) <= stats.ATTACK_CHANCE then stats.EnterLungeState(target) return end --randomly lunge
         if canAttack and math.random(0, 1000) <= stats.ATTACK_CHANCE * 2 then stats.EnterFakeLungeState(target) return end --randomly fake lunge
 
@@ -171,7 +178,20 @@ stats.EnterStalkState = function(target)
         humanoid:MoveTo(stats.FollowPart.Position)
         redirectCount = redirectCount + 0.05
     end
-    stats.State = "idle"
+    stats.EnterIdleState()
+end
+
+stats.EnterCounterState = function(target)
+    if pauseStateChange then return end
+    stats.State = "counter"
+    --don't stop animations
+
+    stats.FollowPart.CFrame = CFrame.new(NPC.HumanoidRootPart.Position) * CFrame.new(0, 0, 5)
+    orientNPC(target.HumanoidRootPart.Position)
+    humanoid:MoveTo(stats.FollowPart.Position)
+    wait(0.5)
+    if stats.State ~= "counter" then return end
+    stats.EnterLungeState(target)
 end
 
 stats.EnterLungeState = function(target)
@@ -195,10 +215,11 @@ stats.EnterLungeState = function(target)
     sounds.lunge:Stop()
     animations.idle:Play()
     wait(1.5)
-    stats.State = "idle"
+    stats.EnterIdleState()
 end
 
 stats.EnterFakeLungeState = function(target)
+    if pauseStateChange then return end
     stats.State = "fakelunge"
     humanoid.WalkSpeed = stats.CHASE_SPEED
     stats.StopAnimations()
@@ -211,12 +232,15 @@ stats.EnterFakeLungeState = function(target)
     wait(0.2)
     humanoid.WalkSpeed = 0
     animations.lunge:Stop()
-    stats.State = "idle"
+    stats.EnterIdleState()
 end
 
 stats.EnterDeadState = function()
+    --ignores pauseStateChange
     stats.State = "dead"
     stats.StopAnimations()
+    pauseStateChange = true
+
     AttackHitbox.CanTouch = false
     NPC.Hips.DeathParticles.Enabled = true
     sounds.taunt:Play()
@@ -224,6 +248,19 @@ stats.EnterDeadState = function()
     NPC:Destroy()
 end
 
+stats.EnterHitState = function()
+    --ignores pauseStateChange
+    stats.State = "hit"
+    stats.StopAnimations()
+    pauseStateChange = true
+
+    animations.hit:Play()
+    wait(1.5)
+    pauseStateChange = false
+    stats.EnterIdleState()
+end
+
 humanoid.Died:Connect(stats.EnterDeadState)
+humanoid.HealthChanged:Connect(stats.EnterHitState) --TODO Only enter hit state when damage has been taken.
 
 stats.EnterIdleState()
