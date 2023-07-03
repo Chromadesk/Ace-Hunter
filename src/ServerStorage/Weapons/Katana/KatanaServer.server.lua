@@ -35,11 +35,9 @@ attacks.frontAttack = function(aDamage, aUser)
     user.Assets.Status.Value = "attacking"
 	wait(0.3)
 	SlashHitbox.CanTouch = true
-	SlashHitbox.Transparency = 0
 	sounds.slash:Play()
 	wait(0.3)
 	SlashHitbox.CanTouch = false
-	SlashHitbox.Transparency = 1
     user.Assets.Status.Value = "standby"
 end
 

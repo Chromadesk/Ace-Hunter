@@ -11,7 +11,8 @@ local animations = {
     lungeBegin = humanoid:LoadAnimation(Anims:WaitForChild("Lunge Begin")),
     chase = humanoid:LoadAnimation(Anims:WaitForChild("Chase")),
     idle = humanoid:LoadAnimation(Anims:WaitForChild("Idle")),
-    hit = humanoid:LoadAnimation(Anims:WaitForChild("Hit"))
+    hit = humanoid:LoadAnimation(Anims:WaitForChild("Hit")),
+    dodge = humanoid:LoadAnimation(Anims:WaitForChild("Dodge"))
 }
 
 local sounds = {
@@ -33,7 +34,7 @@ stats.State = "idle"
 stats.FollowPart = Instance.new("Part")
     stats.FollowPart.Anchored = true
     stats.FollowPart.CanCollide = false
-    stats.FollowPart.Transparency = 1
+    stats.FollowPart.Transparency = 0.5
     stats.FollowPart.Name = "FollowPart"
 
 --https://web.archive.org/web/20171120072253/http://wiki.roblox.com/index.php?title=Top_Down_Action/PiBot
@@ -42,7 +43,7 @@ local function getTargetDistance(targetCharacter)
 	local toPlayer = targetCharacter.Head.Position - NPC.Head.Position
 	local toPlayerRay = Ray.new(NPC.Head.Position, toPlayer)
 	local part = game.Workspace:FindPartOnRay(toPlayerRay, NPC, false, false)
-	if part and part:IsDescendantOf(workspace:FindFirstChild(targetCharacter.Name)) or part:IsDescendantOf(NPC) then -- why does this cause a nil error??
+	if part and part:IsDescendantOf(targetCharacter) or part and part:IsDescendantOf(NPC) then -- why does this cause a nil error??
 		return toPlayer.magnitude
 	end
 	return nil
@@ -142,11 +143,11 @@ stats.EnterStalkState = function(target)
     local redirectCount = 0
     local rotationSpeed = humanoid.WalkSpeed * 0.1
     local direction = math.round(math.random(0, 1))
+    local canAttack = false
     animations.strafeLeft:Play()
 
     while stats.State == "stalk" and wait(0.001) and target.Humanoid.Health > 0 and humanoid.Health > 0 do
-        local canAttack = true
-
+        if pauseStateChange then return end
         local closestCharacter, closestDistance, closestAngle = getClosestVisibleCharacter()
         if not closestCharacter then break end
         if direction == 1 then
@@ -156,7 +157,7 @@ stats.EnterStalkState = function(target)
         end
 
         -- If the target attacks prematurely, begin counterattack.
-        if target.Assets.Status.Value == "attacking" then stats.EnterCounterState(target) return end
+        if target.Assets.Status.Value == "attacking" then stats.EnterCounterState(target, closestAngle) return end
 
         -- If facing the target's back, auto attack them. 
         if closestAngle > 10 then stats.EnterLungeState(target) return end
@@ -175,6 +176,7 @@ stats.EnterStalkState = function(target)
             secsToRedirect = math.random(1, 5) -- set a new time to change directions
             direction = 0 - direction
         end
+        if redirectCount > 2 then canAttack = true end -- If enough time has passed, start rolling to randomly attack.
         currentAngle = currentAngle + rotationSpeed
 
         orientNPC(target.HumanoidRootPart.Position)
@@ -184,21 +186,26 @@ stats.EnterStalkState = function(target)
     stats.EnterIdleState()
 end
 
-stats.EnterCounterState = function(target)
+stats.EnterCounterState = function(target, closestAngle)
     if pauseStateChange then return end
+    pauseStateChange = true
     stats.State = "counter"
-    --don't stop animations
+    stats.StopAnimations()
 
-    humanoid.WalkSpeed = stats.LUNGE_SPEED
-    stats.FollowPart.CFrame = CFrame.new(NPC.HumanoidRootPart.Position) * CFrame.new(0, 0, 10)
+    stats.FollowPart.CFrame = NPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 10)
     orientNPC(target.HumanoidRootPart.Position)
+    animations.dodge:Play()
     humanoid:MoveTo(stats.FollowPart.Position)
     wait(0.3)
+    animations.dodge:Stop()
     if stats.State ~= "counter" then return end
+    pauseStateChange = false
     stats.EnterLungeState(target)
 end
 
 stats.EnterLungeState = function(target)
+    if pauseStateChange then return end
+    pauseStateChange = true
     stats.State = "lunge"
     stats.StopAnimations()
 
@@ -225,6 +232,7 @@ stats.EnterLungeState = function(target)
     sounds.lunge:Stop()
     animations.idle:Play()
     wait(1.5)
+    pauseStateChange = false
     stats.EnterIdleState()
 end
 
@@ -255,6 +263,7 @@ stats.EnterDeadState = function()
     NPC.Hips.DeathParticles.Enabled = true
     sounds.taunt:Play()
     sounds.taunt.Ended:Wait()
+    if FollowPart then FollowPart:Destroy() end
     NPC:Destroy()
 end
 
@@ -263,7 +272,8 @@ stats.EnterHitState = function()
     stats.State = "hit"
     stats.StopAnimations()
     pauseStateChange = true
-
+    
+    AttackHitbox.CanTouch = false
     animations.hit:Play()
     wait(1.5)
     pauseStateChange = false
