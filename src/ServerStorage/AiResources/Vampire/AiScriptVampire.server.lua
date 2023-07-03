@@ -34,7 +34,7 @@ stats.State = "idle"
 stats.FollowPart = Instance.new("Part")
     stats.FollowPart.Anchored = true
     stats.FollowPart.CanCollide = false
-    stats.FollowPart.Transparency = 0.5
+    stats.FollowPart.Transparency = 1
     stats.FollowPart.Name = "FollowPart"
 
 --https://web.archive.org/web/20171120072253/http://wiki.roblox.com/index.php?title=Top_Down_Action/PiBot

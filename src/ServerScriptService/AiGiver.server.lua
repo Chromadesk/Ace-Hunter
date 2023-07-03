@@ -18,6 +18,7 @@ local function processVampire(vampireNPC)
 end
 
 for _,v in pairs(workspace.NPCs:GetChildren()) do
+        warn("Vampires already in map: Use spawners instead.")
         processVampire(v)
 end
 
