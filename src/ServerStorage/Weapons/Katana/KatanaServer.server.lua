@@ -35,9 +35,11 @@ attacks.frontAttack = function(aDamage, aUser)
     user.Assets.Status.Value = "attacking"
 	wait(0.3)
 	SlashHitbox.CanTouch = true
+	SlashHitbox.Transparency = 0
 	sounds.slash:Play()
 	wait(0.3)
 	SlashHitbox.CanTouch = false
+	SlashHitbox.Transparency = 1
     user.Assets.Status.Value = "standby"
 end
 
@@ -50,6 +52,20 @@ attacks.backAttack = function(aDamage, aUser)
 	StabHitbox.CanTouch = true
 	sounds.slash:Play()
 	wait(0.6)
+	StabHitbox.CanTouch = false
+	user.Assets.DisableRotation.Value = false
+    user.Assets.Status.Value = "standby"
+end
+
+attacks.downAttack = function(aDamage, aUser)
+    damage = aDamage * 1.3
+    user = aUser
+    user.Assets.Status.Value = "attacking"
+	user.Assets.DisableRotation.Value = true
+	wait(0.3)
+	StabHitbox.CanTouch = true
+	sounds.slash:Play()
+	wait(0.15)
 	StabHitbox.CanTouch = false
 	user.Assets.DisableRotation.Value = false
     user.Assets.Status.Value = "standby"

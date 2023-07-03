@@ -8,6 +8,7 @@ local animations = {
     strafeRight = humanoid:LoadAnimation(Anims:WaitForChild("Strafe Right")),
     strafeLeft = humanoid:LoadAnimation(Anims:WaitForChild("Strafe Left")),
     lunge = humanoid:LoadAnimation(Anims:WaitForChild("Chase Alt")),
+    lungeBegin = humanoid:LoadAnimation(Anims:WaitForChild("Lunge Begin")),
     chase = humanoid:LoadAnimation(Anims:WaitForChild("Chase")),
     idle = humanoid:LoadAnimation(Anims:WaitForChild("Idle")),
     hit = humanoid:LoadAnimation(Anims:WaitForChild("Hit"))
@@ -16,6 +17,7 @@ local animations = {
 local sounds = {
     breathing = NPC.HumanoidRootPart:WaitForChild("Breathing"),
     lunge = NPC.HumanoidRootPart:WaitForChild("Lunge"),
+    lungeBegin = NPC.HumanoidRootPart:WaitForChild("Lunge Begin"),
     taunt = NPC.HumanoidRootPart:WaitForChild("Taunt")
 }
 
@@ -122,6 +124,7 @@ stats.EnterChaseState = function(target)
             stats.EnterStalkState(target)
         end
     end
+    stats.EnterIdleState()
 end
 
 stats.EnterStalkState = function(target)
@@ -152,14 +155,14 @@ stats.EnterStalkState = function(target)
             if animations.strafeRight.IsPlaying then animations.strafeLeft:Play() animations.strafeRight:Stop() end
         end
 
+        -- If the target attacks prematurely, begin counterattack.
+        if target.Assets.Status.Value == "attacking" then stats.EnterCounterState(target) return end
+
         -- If facing the target's back, auto attack them. 
         if closestAngle > 10 then stats.EnterLungeState(target) return end
 
         -- If the target goes out of stalking range, chase them.
         if closestDistance > stats.STALK_DISTANCE then stats.EnterChaseState(target) return end
-
-        -- If the target attacks prematurely, begin counterattack.
-        if target.Assets.Status.Value == "attacking" then stats.EnterCounterState(target) return end
 
         if canAttack and math.random(0, 1000) <= stats.ATTACK_CHANCE then stats.EnterLungeState(target) return end --randomly lunge
         if canAttack and math.random(0, 1000) <= stats.ATTACK_CHANCE * 2 then stats.EnterFakeLungeState(target) return end --randomly fake lunge
@@ -186,10 +189,11 @@ stats.EnterCounterState = function(target)
     stats.State = "counter"
     --don't stop animations
 
-    stats.FollowPart.CFrame = CFrame.new(NPC.HumanoidRootPart.Position) * CFrame.new(0, 0, 5)
+    humanoid.WalkSpeed = stats.LUNGE_SPEED
+    stats.FollowPart.CFrame = CFrame.new(NPC.HumanoidRootPart.Position) * CFrame.new(0, 0, 10)
     orientNPC(target.HumanoidRootPart.Position)
     humanoid:MoveTo(stats.FollowPart.Position)
-    wait(0.5)
+    wait(0.3)
     if stats.State ~= "counter" then return end
     stats.EnterLungeState(target)
 end
@@ -201,11 +205,17 @@ stats.EnterLungeState = function(target)
     orientNPC(target.HumanoidRootPart.Position)
     humanoid.WalkSpeed = stats.LUNGE_SPEED
 
-    stats.FollowPart.CFrame = NPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (stats.STALK_DISTANCE + 50))
-    humanoid:MoveTo(stats.FollowPart.Position)
-    animations.lunge:Play()
+    sounds.lungeBegin.TimePosition = 0.2
+    sounds.lungeBegin:Play()
+    animations.lungeBegin:Play()
+    wait(0.7)
+    sounds.lungeBegin:Stop()
     sounds.lunge.TimePosition = 0.2
     sounds.lunge:Play()
+    stats.FollowPart.CFrame = NPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (stats.STALK_DISTANCE + 50))
+    humanoid:MoveTo(stats.FollowPart.Position)
+    animations.lungeBegin:Stop()
+    animations.lunge:Play()
 
     AttackHitbox.CanTouch = true
     wait(1)

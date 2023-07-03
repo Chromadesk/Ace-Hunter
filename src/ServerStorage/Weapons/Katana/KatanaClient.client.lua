@@ -20,9 +20,9 @@ stats.originalUserSpeed = 0
 stats.doAttack = function(attackName)
 	animations.idle:Stop()
 	animations.move:Stop()
-	animations[attackName]:Play()
 	user.Humanoid.WalkSpeed = 3
 	ActivateRE:FireServer(stats.DAMAGE, user, attackName)
+	animations[attackName]:Play()
 	animations[attackName].Ended:Wait()
 	animations.idle:Play()
 	user.Humanoid.WalkSpeed = stats.originalUserSpeed
