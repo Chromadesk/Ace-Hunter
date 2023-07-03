@@ -71,7 +71,7 @@ AttackHitbox.touched:Connect(function(toucher)
     if attacking or not toucher:IsDescendantOf(closestCharacter) then return end
     attacking = true
     
-    if closestAngle < 7 and closestAngle > 3 then --i dont know why the angle changes depending on distance
+    if closestAngle < 8 and closestAngle > 0 then --i dont know why the angle changes depending on distance
         closestCharacter.Humanoid:TakeDamage(stats.BITE_DAMAGE)
     else
         closestCharacter.Humanoid:TakeDamage(stats.SLASH_DAMAGE)
@@ -188,7 +188,6 @@ end
 
 stats.EnterCounterState = function(target, closestAngle)
     if pauseStateChange then return end
-    pauseStateChange = true
     stats.State = "counter"
     stats.StopAnimations()
 
@@ -199,13 +198,11 @@ stats.EnterCounterState = function(target, closestAngle)
     wait(0.3)
     animations.dodge:Stop()
     if stats.State ~= "counter" then return end
-    pauseStateChange = false
     stats.EnterLungeState(target)
 end
 
 stats.EnterLungeState = function(target)
     if pauseStateChange then return end
-    pauseStateChange = true
     stats.State = "lunge"
     stats.StopAnimations()
 
@@ -232,7 +229,6 @@ stats.EnterLungeState = function(target)
     sounds.lunge:Stop()
     animations.idle:Play()
     wait(1.5)
-    pauseStateChange = false
     stats.EnterIdleState()
 end
 
