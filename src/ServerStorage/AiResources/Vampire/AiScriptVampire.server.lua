@@ -3,6 +3,8 @@ local humanoid = NPC.Humanoid
 local AttackHitbox = NPC:WaitForChild("AttackHitbox")
 local pauseStateChange = false
 
+local ProximityMethods = require(game:GetService("ReplicatedStorage").ProximityMethods)
+
 local Anims = NPC:WaitForChild("Animations")
 local animations = {
     strafeRight = humanoid:LoadAnimation(Anims:WaitForChild("Strafe Right")),
@@ -37,36 +39,9 @@ stats.FollowPart = Instance.new("Part")
     stats.FollowPart.Transparency = 1
     stats.FollowPart.Name = "FollowPart"
 
---https://web.archive.org/web/20171120072253/http://wiki.roblox.com/index.php?title=Top_Down_Action/PiBot
-local function getTargetDistance(targetCharacter)
-	if not targetCharacter or targetCharacter.Humanoid.Health <= 0 then return nil end
-	local toPlayer = targetCharacter.Head.Position - NPC.Head.Position
-	local toPlayerRay = Ray.new(NPC.Head.Position, toPlayer)
-	local part = game.Workspace:FindPartOnRay(toPlayerRay, NPC, false, false)
-	if part and part:IsDescendantOf(targetCharacter) or part and part:IsDescendantOf(NPC) then -- why does this cause a nil error??
-		return toPlayer.magnitude
-	end
-	return nil
-end
-
-local function getClosestVisibleCharacter()
-	local closestDistance = math.huge
-	local closestCharacter = nil
-    local closestAngle = nil
-	for _, player in pairs(game.Players:GetPlayers()) do
-		local distance = getTargetDistance(player.Character)
-		if distance and distance < closestDistance then
-			closestDistance = distance
-			closestCharacter = player.Character
-            closestAngle = (player.Character.ChestUpper.CFrame:inverse() * NPC.HumanoidRootPart.CFrame).Z
-		end
-	end
-	return closestCharacter, closestDistance, closestAngle
-end
-
 local attacking = false
 AttackHitbox.touched:Connect(function(toucher)
-    local closestCharacter, _, closestAngle = getClosestVisibleCharacter()
+    local closestCharacter, _, closestAngle = ProximityMethods.getClosestCharacter(NPC, false)
     if not closestCharacter then return end
     if attacking or not toucher:IsDescendantOf(closestCharacter) then return end
     attacking = true
@@ -101,7 +76,7 @@ stats.EnterIdleState = function()
     animations.idle:Play()
     if not sounds.breathing.IsPlaying then sounds.breathing:Play() end
     while stats.State == "idle" and wait(0.001)  do
-        local closestCharacter, closestDistance = getClosestVisibleCharacter()
+        local closestCharacter, closestDistance = ProximityMethods.getClosestCharacter(NPC, true)
         if closestDistance <= stats.FOLLOW_DISTANCE then
             stats.EnterChaseState(closestCharacter)
         end
@@ -119,7 +94,7 @@ stats.EnterChaseState = function(target)
         stats.FollowPart.CFrame = target.HumanoidRootPart.CFrame
         humanoid:MoveTo(stats.FollowPart.Position)
 
-        local closestCharacter, closestDistance = getClosestVisibleCharacter()
+        local closestCharacter, closestDistance = ProximityMethods.getClosestCharacter(NPC, false)
         if not closestCharacter then break end
         if closestDistance <= stats.STALK_DISTANCE then
             stats.EnterStalkState(target)
@@ -148,7 +123,7 @@ stats.EnterStalkState = function(target)
 
     while stats.State == "stalk" and wait(0.001) and target.Humanoid.Health > 0 and humanoid.Health > 0 do
         if pauseStateChange then return end
-        local closestCharacter, closestDistance, closestAngle = getClosestVisibleCharacter()
+        local closestCharacter, closestDistance, closestAngle = ProximityMethods.getClosestCharacter(NPC, false)
         if not closestCharacter then break end
         if direction == 1 then
             if animations.strafeLeft.IsPlaying then animations.strafeRight:Play() animations.strafeLeft:Stop() end
