@@ -10,7 +10,6 @@ ProximityMethods.getTargetDistance = function(target, origin, visible)
 	local part = game.Workspace:FindPartOnRay(toTargetRay, origin, false, false)
     if not visible then return toTarget.magnitude end
 	if part and part:IsDescendantOf(target) or part and part:IsDescendantOf(origin) then
-		print(toTarget.magnitude)
 		return toTarget.magnitude
 	end
 	return nil

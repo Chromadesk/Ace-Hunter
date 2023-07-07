@@ -25,7 +25,7 @@ local sounds = {
 }
 
 local stats = {}
-stats.FOLLOW_DISTANCE = 50
+stats.FOLLOW_DISTANCE = 80
 stats.STALK_DISTANCE = 20
 stats.CHASE_SPEED = 25
 stats.LUNGE_SPEED = 40
