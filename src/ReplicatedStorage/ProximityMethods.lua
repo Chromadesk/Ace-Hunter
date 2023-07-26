@@ -21,7 +21,7 @@ ProximityMethods.getClosestCharacter = function(origin, visible)
     local closestAngle = nil
 	
 	for _, player in pairs(game.Players:GetPlayers()) do
-		if player.Character.Humanoid.Health <= 0 then break end
+		if not player.Character or player.Character.Humanoid.Health <= 0 then break end
 		local distance = ProximityMethods.getTargetDistance(player.Character, origin, visible)
 		if distance and distance < closestDistance then
 			closestDistance = distance
