@@ -6,20 +6,23 @@ local function extractFolder(folder, reciever)
         end
 end
 
-local function processVampire(vampireNPC)
-        local vampireResources = AiResources.Vampire
-        local NPCScript = vampireResources.AiScriptVampire:Clone()
-        local Animations = vampireResources.Animations:Clone()
-        local DeathParticles = vampireResources.DeathParticles:Clone()
-        NPCScript.Parent = vampireNPC
-        Animations.Parent = vampireNPC
-        DeathParticles.Parent = vampireNPC.Hips
-        extractFolder(AiResources.Vampire.Sounds:Clone(), vampireNPC.HumanoidRootPart)
+local function processNPC(NPC)
+        local npcResources = AiResources[NPC.Name] --Grab the aiResources for this particular NPC
+        local NPCScript = npcResources.AiScript:Clone()
+        local Animations = npcResources.Animations:Clone()
+        
+        NPCScript.Parent = NPC
+        Animations.Parent = NPC
+        if npcResources.DeathParticles then --Not all NPCs have DeathParticles, so only apply for the ones that do
+                local DeathParticles = npcResources.DeathParticles:Clone()
+                DeathParticles.Parent = NPC.Hips
+        end
+        extractFolder(npcResources.Sounds:Clone(), NPC.HumanoidRootPart) --Done to make sounds actually play from the HRT
 end
 
 for _,v in pairs(workspace.NPCs:GetChildren()) do
-        warn("Vampires already in map: Use spawners instead.")
-        processVampire(v)
+        warn("NPCs already in map: Use spawners instead.")
+        processNPC(v)
 end
 
-workspace.NPCs.ChildAdded:Connect(processVampire)
+workspace.NPCs.ChildAdded:Connect(processNPC)
