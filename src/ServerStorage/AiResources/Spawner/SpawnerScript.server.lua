@@ -1,6 +1,6 @@
 local ServerStorage = game:GetService("ServerStorage")
 local Spawner = script.Parent
-local NPC = ServerStorage.AiEnemies[Spawner.SpawnTarget.Value]
+local NPC = ServerStorage.AiCharacters[Spawner.SpawnTarget.Value]
 
 --Id: The unique ID number of the spawner.
 --IsActive: Whether or not the spawner is allowed to spawn NPCs

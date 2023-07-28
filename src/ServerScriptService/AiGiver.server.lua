@@ -13,7 +13,7 @@ local function processNPC(NPC)
         
         NPCScript.Parent = NPC
         Animations.Parent = NPC
-        if npcResources.DeathParticles then --Not all NPCs have DeathParticles, so only apply for the ones that do
+        if npcResources:FindFirstChild("DeathParticles") then --Not all NPCs have DeathParticles, so only apply for the ones that do
                 local DeathParticles = npcResources.DeathParticles:Clone()
                 DeathParticles.Parent = NPC.Hips
         end
