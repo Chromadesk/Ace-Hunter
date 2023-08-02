@@ -3,7 +3,7 @@ local Lighting = game:GetService("Lighting")
 
 Lighting.ColorCorrection.Enabled = false
 
-Lighting.Brightness = 0.5
+Lighting.Brightness = 1
 Lighting.ColorShift_Top = Color3.fromRGB(72, 72, 207)
 Lighting.EnvironmentDiffuseScale = 0.5
 Lighting.OutdoorAmbient = Color3.fromRGB(24, 24, 24)
