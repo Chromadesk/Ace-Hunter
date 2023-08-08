@@ -24,10 +24,10 @@ stats.RUN_SPEED = 22
 local stateControl = {}
 stateControl.State = "idle"
 stateControl.FollowPart = Instance.new("Part")
-    stats.FollowPart.Anchored = true
-    stats.FollowPart.CanCollide = false
-    stats.FollowPart.Transparency = 1
-    stats.FollowPart.Name = "FollowPart"
+    stateControl.FollowPart.Anchored = true
+    stateControl.FollowPart.CanCollide = false
+    stateControl.FollowPart.Transparency = 1
+    stateControl.FollowPart.Name = "FollowPart"
 
 local function orientNPC(position)
 	local HRP = NPC.HumanoidRootPart

@@ -17,6 +17,10 @@ local function processNPC(NPC)
                 local DeathParticles = npcResources.DeathParticles:Clone()
                 DeathParticles.Parent = NPC.Hips
         end
+        if npcResources:FindFirstChild("InteractionRE") then --Not all NPCs have an Interaction RE, so only apply for the ones that do
+                local InteractionRE = npcResources.InteractionRE:Clone()
+                InteractionRE.Parent = NPC
+        end
         extractFolder(npcResources.Sounds:Clone(), NPC.HumanoidRootPart) --Done to make sounds actually play from the HRT
 end
 

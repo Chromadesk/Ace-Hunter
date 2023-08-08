@@ -5,7 +5,7 @@ local UserInputService = game:GetService("UserInputService")
 local ActivateRE = tool:WaitForChild("ActivateRE")
 local pauseInput = false
 
-local user = nil
+local character = nil
 local damage = nil
 
 local sounds = {}
@@ -14,7 +14,7 @@ sounds.hitsound = tool.Handle.Hitsound
 
 local function registerHit(toucher)
 	if not toucher then return end
-	if toucher:IsDescendantOf(user) then return end
+	if toucher:IsDescendantOf(character) then return end
 
 	if toucher.Parent and toucher.Parent:FindFirstChild("Humanoid") then
 		toucher.Parent.Humanoid:TakeDamage(damage)
@@ -26,48 +26,48 @@ end
 AttackHitbox.touched:Connect(registerHit)
 
 local attacks = {}
-attacks.frontAttack = function(aDamage, aUser)
+attacks.frontAttack = function(aDamage, aCharacter)
     damage = aDamage
-    user = aUser
-    user.Assets.Status.Value = "attacking"
+    character = aCharacter
+    character.Assets.Status.Value = "attacking"
 	wait(0.3)
 	AttackHitbox.CanTouch = true
 	sounds.slash:Play()
 	wait(0.3)
 	AttackHitbox.CanTouch = false
-    user.Assets.Status.Value = "standby"
+    character.Assets.Status.Value = "standby"
 end
 
-attacks.backAttack = function(aDamage, aUser)
+attacks.backAttack = function(aDamage, aCharacter)
     damage = aDamage * 2
-    user = aUser
-    user.Assets.Status.Value = "attacking"
-	user.Assets.DisableRotation.Value = true
+    character = aCharacter
+    character.Assets.Status.Value = "attacking"
+	character.Assets.DisableRotation.Value = true
 	wait(0.1)
 	AttackHitbox.CanTouch = true
 	sounds.slash:Play()
 	wait(0.6)
 	AttackHitbox.CanTouch = false
-	user.Assets.DisableRotation.Value = false
-    user.Assets.Status.Value = "standby"
+	character.Assets.DisableRotation.Value = false
+    character.Assets.Status.Value = "standby"
 end
 
-attacks.downAttack = function(aDamage, aUser)
+attacks.downAttack = function(aDamage, aCharacter)
     damage = aDamage * 1.3
-    user = aUser
-    user.Assets.Status.Value = "attacking"
-	user.Assets.DisableRotation.Value = true
+    character = aCharacter
+    character.Assets.Status.Value = "attacking"
+	character.Assets.DisableRotation.Value = true
 	wait(0.3)
 	AttackHitbox.CanTouch = true
 	sounds.slash:Play()
 	wait(0.15)
 	AttackHitbox.CanTouch = false
-	user.Assets.DisableRotation.Value = false
-    user.Assets.Status.Value = "standby"
+	character.Assets.DisableRotation.Value = false
+    character.Assets.Status.Value = "standby"
 end
 
-local function doAttack(player, aDamage, aUser, attackName)
-	attacks[attackName](aDamage, aUser)
+local function doAttack(player, aDamage, aCharacter, attackName)
+	attacks[attackName](aDamage, aCharacter)
 end
 
 ActivateRE.OnServerEvent:Connect(doAttack)
