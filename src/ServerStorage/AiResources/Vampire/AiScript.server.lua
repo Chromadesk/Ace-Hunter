@@ -26,14 +26,14 @@ local sounds = {
 
 local stats = {}
 stats.FOLLOW_DISTANCE = 250
-stats.STALK_DISTANCE = 20
+stats.STALK_DISTANCE = 20 --How much distance the NPC will stay away from their target when stalking
 stats.CHASE_SPEED = 25
 stats.LUNGE_SPEED = 40
 stats.SLASH_DAMAGE = 50
-stats.BITE_DAMAGE = 999
-stats.ATTACK_CHANCE = 2 -- Out of 1000
+stats.BITE_DAMAGE = 999 --How much damage the NPC does when "biting" (hitting target's back)
+stats.ATTACK_CHANCE = 2 -- Random chance out of 1000 to attack autonomously while stalking.
 stats.State = "idle"
-stats.FollowPart = Instance.new("Part")
+stats.FollowPart = Instance.new("Part") --shh the NPC actually follows this instead of the player
     stats.FollowPart.Anchored = true
     stats.FollowPart.CanCollide = false
     stats.FollowPart.Transparency = 1
@@ -143,6 +143,7 @@ stats.EnterStalkState = function(target)
         if canAttack and math.random(0, 1000) <= stats.ATTACK_CHANCE then stats.EnterLungeState(target) return end --randomly lunge
         if canAttack and math.random(0, 1000) <= stats.ATTACK_CHANCE * 2 then stats.EnterFakeLungeState(target) return end --randomly fake lunge
 
+        --Change FollowPart's CFrame to (maxDistance) amount away from the player, and at (currentAngle) of them.
         stats.FollowPart.CFrame = CFrame.new(HRP.Position)*CFrame.Angles(0,math.rad(currentAngle),0)*CFrame.new(0, 0, maxDistance)
 
         if redirectCount >= secsToRedirect then -- If enough time has passed while stalking, change directions.
