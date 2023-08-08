@@ -49,10 +49,18 @@ UserInputService.InputBegan:Connect(function(input, eventProcessed)
 		stats.doAttack("backAttack")
 	end
 
+	--E: NPC Interaction Key
 	if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode.Name == "E" then
-		local mouseTarget = game:GetService("Players").LocalPlayer:GetMouse().Target
-		if mouseTarget.Parent and mouseTarget.Parent:FindFirstChild("InteractionRE") then
-			mouseTarget.Parent.InteractionRE:FireServer()
+		local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+		--If too far from NPC, do nothing.
+		if (mouse.Hit.Position - character.Head.Position).magnitude > 60 then return end
+
+		if mouse.Target.Parent and mouse.Target.Parent:FindFirstChild("Humanoid") then
+			mouse.Target.Parent.InteractionRE:FireServer() return
+		end
+		--Check if target is an accessory
+		if mouse.Target.Parent.Parent and mouse.Target.Parent.Parent:FindFirstChild("Humanoid") then
+			mouse.Target.Parent.Parent.InteractionRE:FireServer() return
 		end
 	end
 end)

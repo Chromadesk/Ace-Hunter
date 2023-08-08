@@ -4,6 +4,7 @@ local AttackHitbox = NPC:WaitForChild("AttackHitbox")
 local pauseStateChange = false
 
 local ProximityMethods = require(game:GetService("ReplicatedStorage").ProximityMethods)
+local NPCMethods = require(game:GetService("ReplicatedStorage").NPCMethods)
 
 local Anims = NPC:WaitForChild("Animations")
 local animations = {
@@ -57,22 +58,10 @@ AttackHitbox.touched:Connect(function(toucher)
     AttackHitbox.CanTouch = false
 end)
 
---TODO Use tween service for this to make smoother.
-local function orientNPC(position)
-	local HRP = NPC.HumanoidRootPart
-    HRP.CFrame = CFrame.new(HRP.CFrame.Position, Vector3.new(position.X, HRP.CFrame.Position.Y, position.Z))
-end
-
-stats.StopAnimations = function()
-    for _,v in pairs(animations) do
-        v:Stop()
-    end
-end
-
 stats.EnterIdleState = function()
     if pauseStateChange then return end
     stats.State = "idle"
-    stats.StopAnimations()
+    NPCMethods.stopAnimations(animations)
     animations.idle:Play()
     if not sounds.breathing.IsPlaying then sounds.breathing:Play() end
     while stats.State == "idle" and wait(0.001)  do
@@ -86,11 +75,11 @@ end
 stats.EnterChaseState = function(target)
     if pauseStateChange then return end
     stats.State = "chase"
-    stats.StopAnimations()
+    NPCMethods.stopAnimations(animations)
     animations.chase:Play()
     humanoid.WalkSpeed = stats.CHASE_SPEED
     while stats.State == "chase" and wait(0.001) and target.Humanoid.Health > 0 and humanoid.Health > 0 do
-        orientNPC(target.HumanoidRootPart.Position)
+        NPCMethods.orientNPC(NPC, target.HumanoidRootPart.Position)
         stats.FollowPart.CFrame = target.HumanoidRootPart.CFrame
         humanoid:MoveTo(stats.FollowPart.Position)
 
@@ -106,7 +95,7 @@ end
 stats.EnterStalkState = function(target)
     if pauseStateChange then return end
     stats.State = "stalk"
-    stats.StopAnimations()
+    NPCMethods.stopAnimations(animations)
     humanoid.WalkSpeed = stats.CHASE_SPEED
 
     local maxDistance = stats.STALK_DISTANCE - math.random(1, 8)
@@ -155,7 +144,7 @@ stats.EnterStalkState = function(target)
         if redirectCount > 2 then canAttack = true end -- If enough time has passed, start rolling to randomly attack.
         currentAngle = currentAngle + rotationSpeed
 
-        orientNPC(target.HumanoidRootPart.Position)
+        NPCMethods.orientNPC(NPC, target.HumanoidRootPart.Position)
         humanoid:MoveTo(stats.FollowPart.Position)
         redirectCount = redirectCount + 0.05
     end
@@ -165,10 +154,10 @@ end
 stats.EnterCounterState = function(target, closestAngle)
     if pauseStateChange then return end
     stats.State = "counter"
-    stats.StopAnimations()
+    NPCMethods.stopAnimations(animations)
 
     stats.FollowPart.CFrame = NPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 10)
-    orientNPC(target.HumanoidRootPart.Position)
+    NPCMethods.orientNPC(NPC, target.HumanoidRootPart.Position)
     animations.dodge:Play()
     humanoid:MoveTo(stats.FollowPart.Position)
     wait(0.3)
@@ -180,9 +169,9 @@ end
 stats.EnterLungeState = function(target)
     if pauseStateChange then return end
     stats.State = "lunge"
-    stats.StopAnimations()
+    NPCMethods.stopAnimations(animations)
 
-    orientNPC(target.HumanoidRootPart.Position)
+    NPCMethods.orientNPC(NPC, target.HumanoidRootPart.Position)
     humanoid.WalkSpeed = stats.LUNGE_SPEED
 
     sounds.lungeBegin.TimePosition = 0.2
@@ -212,9 +201,9 @@ stats.EnterFakeLungeState = function(target)
     if pauseStateChange then return end
     stats.State = "fakelunge"
     humanoid.WalkSpeed = stats.CHASE_SPEED
-    stats.StopAnimations()
+    NPCMethods.stopAnimations(animations)
 
-    orientNPC(target.HumanoidRootPart.Position)
+    NPCMethods.orientNPC(NPC, target.HumanoidRootPart.Position)
     stats.FollowPart.CFrame = NPC.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0 - (4))
     humanoid:MoveTo(stats.FollowPart.Position)
     animations.chase:Play()
@@ -228,7 +217,7 @@ end
 stats.EnterDeadState = function()
     --ignores pauseStateChange
     stats.State = "dead"
-    stats.StopAnimations()
+    NPCMethods.stopAnimations(animations)
     pauseStateChange = true
 
     AttackHitbox.CanTouch = false
@@ -242,7 +231,7 @@ end
 stats.EnterHitState = function()
     --ignores pauseStateChange
     stats.State = "hit"
-    stats.StopAnimations()
+    NPCMethods.stopAnimations(animations)
     pauseStateChange = true
     
     AttackHitbox.CanTouch = false
