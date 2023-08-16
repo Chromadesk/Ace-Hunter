@@ -48,7 +48,7 @@ stateControl.EnterFollowState = function(target)
         stateControl.FollowPart.CFrame = target.HumanoidRootPart.CFrame
         humanoid:MoveTo(stateControl.FollowPart.Position)
 
-        local closestCharacter, closestDistance = ProximityMethods.getClosestCharacter(NPC, false)
+        local closestCharacter, closestDistance = ProximityMethods.getClosestPlayer(NPC, false)
         if not closestCharacter then break end
 
         --If too close, stop moving or slow down.
@@ -74,9 +74,26 @@ end
 
 --Hide idly
 
+--Die when dead
+stateControl.EnterDeadState = function()
+    --ignores pauseStateChange
+    stats.State = "dead"
+    NPCMethods.stopAnimations(animations)
+    pauseStateChange = true
+
+    -- sounds.taunt:Play()
+    -- sounds.taunt.Ended:Wait()
+    wait(3)
+
+    if FollowPart then FollowPart:Destroy() end
+    NPC:Destroy()
+end
+
 InteractionRE.onServerEvent:Connect(function(player)
-    print(player)
-    print(stateControl.State)
     if stateControl.State ~= "follow" then stateControl.EnterFollowState(player.Character)
     else stateControl.EnterIdleState() end
 end)
+
+humanoid.Died:Connect(stateControl.EnterDeadState)
+
+stateControl.EnterIdleState()

@@ -15,18 +15,37 @@ ProximityMethods.getTargetDistance = function(target, origin, visible)
 	return nil
 end
 
-ProximityMethods.getClosestCharacter = function(origin, visible)
+ProximityMethods.getClosestPlayer = function(origin, visible)
 	local closestDistance = math.huge
 	local closestCharacter = nil
     local closestAngle = nil
 	
 	for _, player in pairs(game.Players:GetPlayers()) do
-		if not player.Character or player.Character.Humanoid.Health <= 0 then break end
-		local distance = ProximityMethods.getTargetDistance(player.Character, origin, visible)
-		if distance and distance < closestDistance then
-			closestDistance = distance
-			closestCharacter = player.Character
-            closestAngle = (player.Character.ChestUpper.CFrame:inverse() * origin.HumanoidRootPart.CFrame).Z
+		if player.Character and player.Character.Humanoid.Health > 0 then
+			local distance = ProximityMethods.getTargetDistance(player.Character, origin, visible)
+			if distance and distance < closestDistance then
+				closestDistance = distance
+				closestCharacter = player.Character
+				closestAngle = (player.Character.ChestUpper.CFrame:inverse() * origin.HumanoidRootPart.CFrame).Z
+			end
+		end
+	end
+	return closestCharacter, closestDistance, closestAngle
+end
+
+ProximityMethods.getClosestVillager = function(origin, visible)
+	local closestDistance = math.huge
+	local closestCharacter = nil
+    local closestAngle = nil
+	
+	for _, npc in pairs(workspace.NPCs:GetChildren()) do
+		if npc.Name == "Villager" and npc.Humanoid.Health > 0 then
+			local distance = ProximityMethods.getTargetDistance(npc, origin, visible)
+			if distance and distance < closestDistance then
+				closestDistance = distance
+				closestCharacter = npc
+				closestAngle = (npc.ChestUpper.CFrame:inverse() * origin.HumanoidRootPart.CFrame).Z
+			end
 		end
 	end
 	return closestCharacter, closestDistance, closestAngle

@@ -42,15 +42,26 @@ stats.FollowPart = Instance.new("Part") --shh the NPC actually follows this inst
 
 local attacking = false
 AttackHitbox.touched:Connect(function(toucher)
-    local closestCharacter, _, closestAngle = ProximityMethods.getClosestCharacter(NPC, false)
-    if not closestCharacter then return end
-    if attacking or not toucher:IsDescendantOf(closestCharacter) then return end
+    local closestTarget, targetAngle = nil
+
+    local closestPlayer, _, playerAngle = ProximityMethods.getClosestPlayer(NPC, false)
+    local closestVillager, _, villagerAngle = ProximityMethods.getClosestVillager(NPC, false)
+    if toucher:IsDescendantOf(closestPlayer) then
+        closestTarget = closestPlayer
+        targetAngle = playerAngle
+    end
+    if toucher:IsDescendantOf(closestVillager) then
+        closestTarget = closestVillager
+        targetAngle = villagerAngle
+    end
+
+    if attacking then return end
     attacking = true
     
-    if closestAngle < 8 and closestAngle > 0 then --i dont know why the angle changes depending on distance
-        closestCharacter.Humanoid:TakeDamage(stats.BITE_DAMAGE)
+    if targetAngle < 8 and targetAngle > 0 then --Why does angle change depending on distance?
+        closestTarget.Humanoid:TakeDamage(stats.BITE_DAMAGE)
     else
-        closestCharacter.Humanoid:TakeDamage(stats.SLASH_DAMAGE)
+        closestTarget.Humanoid:TakeDamage(stats.SLASH_DAMAGE)
     end
 
     wait(0.1)
@@ -65,9 +76,16 @@ stats.EnterIdleState = function()
     animations.idle:Play()
     if not sounds.breathing.IsPlaying then sounds.breathing:Play() end
     while stats.State == "idle" and wait(0.001)  do
-        local closestCharacter, closestDistance = ProximityMethods.getClosestCharacter(NPC, true)
-        if closestDistance <= stats.FOLLOW_DISTANCE then
-            stats.EnterChaseState(closestCharacter)
+        local closestPlayer, playerDistance = ProximityMethods.getClosestPlayer(NPC, true)
+        local closestVillager, villagerDistance = ProximityMethods.getClosestVillager(NPC, true, true)
+
+        if closestVillager and closestVillager.IsProtected.Value == false and villagerDistance <= stats.FOLLOW_DISTANCE then
+            print("i see vilager!")
+            stats.EnterChaseState(closestVillager)
+        end
+        if closestPlayer and playerDistance <= stats.FOLLOW_DISTANCE then
+            print("i see player!")
+            stats.EnterChaseState(closestPlayer)
         end
     end
 end
@@ -79,15 +97,14 @@ stats.EnterChaseState = function(target)
     animations.chase:Play()
     humanoid.WalkSpeed = stats.CHASE_SPEED
     while stats.State == "chase" and wait(0.001) and target.Humanoid.Health > 0 and humanoid.Health > 0 do
+        if ProximityMethods.getTargetDistance(target, NPC, false) <= stats.STALK_DISTANCE then
+            if target.Name == "Villager" then stats.EnterLungeState(target)
+            else stats.EnterStalkState(target) end
+        end
+
         NPCMethods.orientNPC(NPC, target.HumanoidRootPart.Position)
         stats.FollowPart.CFrame = target.HumanoidRootPart.CFrame
         humanoid:MoveTo(stats.FollowPart.Position)
-
-        local closestCharacter, closestDistance = ProximityMethods.getClosestCharacter(NPC, false)
-        if not closestCharacter then break end
-        if closestDistance <= stats.STALK_DISTANCE then
-            stats.EnterStalkState(target)
-        end
     end
     stats.EnterIdleState()
 end
@@ -112,7 +129,7 @@ stats.EnterStalkState = function(target)
 
     while stats.State == "stalk" and wait(0.001) and target.Humanoid.Health > 0 and humanoid.Health > 0 do
         if pauseStateChange then return end
-        local closestCharacter, closestDistance, closestAngle = ProximityMethods.getClosestCharacter(NPC, false)
+        local closestCharacter, closestDistance, closestAngle = ProximityMethods.getClosestPlayer(NPC, false)
         if not closestCharacter then break end
         if direction == 1 then
             if animations.strafeLeft.IsPlaying then animations.strafeRight:Play() animations.strafeLeft:Stop() end

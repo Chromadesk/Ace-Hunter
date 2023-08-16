@@ -8,8 +8,8 @@ end
 
 --If the closest player is within max distance, return true. If not, return false.
 NPCMethods.isPlayerNear = function(NPC, max)
-    local closestCharacter, closestDistance = ProximityMethods.getClosestCharacter(NPC, false)
-    if not closestCharacter or not closestCharacter:FindFirstChild("Assets") then return false end
+    local closestCharacter, closestDistance = ProximityMethods.getClosestPlayer(NPC, false)
+    if not closestCharacter then return false end
     if closestDistance < max then return true end
     return false
 end
